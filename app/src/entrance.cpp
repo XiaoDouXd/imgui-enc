@@ -3,6 +3,19 @@
 
 namespace CC
 {
+    static void OnDropFile(std::filesystem::directory_entry dir)
+    {
+        if (dir.is_directory())
+        {
+            auto extension = std::filesystem::path(".png");
+            auto f_itr = std::filesystem::directory_iterator(dir);
+            for(auto& f : f_itr)
+            {
+                
+            }
+        }
+    }
+
     /// @brief 主循环启动器
     class MainUnit : public CC::LoopUnit
     {
@@ -15,6 +28,8 @@ namespace CC
             using namespace CC;
             using namespace CC::UI;
             mainPanelId = WndMgr::open<MainPanel>();
+
+            StaticEventMgr::registerEvent<StaticEvent::OnDropFile>((std::ptrdiff_t)this, OnDropFile);
         }
 
         void update() override

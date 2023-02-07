@@ -389,6 +389,18 @@ namespace CC
             StaticEventMgr::broadcastAsync<StaticEvent::OnMouseMove>();
     }
 
+    static void dropFile(const SDL_Event& event)
+    {
+        if (event.type == SDL_DROPFILE)
+        {
+            if (!event.drop.file || !*event.drop.file) return;
+
+            using namespace std::filesystem;
+            auto dir = directory_entry(event.drop.file);
+            StaticEventMgr::broadcastAsync<StaticEvent::OnDropFile>(dir);
+        }
+    }
+
     // -----------------------------------------------------------------------------------------
 
     /// @brief 事件处理数据初始化
@@ -410,5 +422,6 @@ namespace CC
     {
         resizeWindow();
         moveWindow();
+        dropFile(event);
     }
 }

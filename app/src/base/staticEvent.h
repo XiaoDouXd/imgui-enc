@@ -1,5 +1,7 @@
 #pragma once
 
+#include <filesystem>
+
 #include "staticEventMgr.h"
 
 namespace CC
@@ -16,5 +18,8 @@ namespace CC
         class OnMouseUp : public EventTypeBase<OnMouseUp, uint8_t> {};
         /// @brief 鼠标移动
         class OnMouseMove : public EventTypeBase<OnMouseMove> {};
+
+        /// @brief 文件拖拽
+        class OnDropFile : public EventTypeBase<OnDropFile, std::filesystem::directory_entry> {};
     }
 }

@@ -1,10 +1,11 @@
 #include "vulkanMgr.h"
 
 #include <cassert>
+#ifdef CC_VK_DEBUG_REPORT
 #include <cstdio>         // printf, fprintf
 #include <cstdlib>        // abort
+#endif
 #include <cstring>        // memcpy
-#include <iostream>
 
 #include "ccexce.h"
 

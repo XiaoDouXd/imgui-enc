@@ -1,4 +1,3 @@
-#include <iostream>
 #include <string>
 
 #include "base/wndBase.hpp"
@@ -114,7 +113,7 @@ namespace CC::UI
         {
             if (drawList)
             {
-                drawList->AddImage(Img->getId(), {0, 0}, {10, 10});
+                drawList->AddImage(Img->getId(), {0, 0}, {5000, 5000});
             }
         }
 

@@ -92,10 +92,10 @@ namespace CC::UI
             info.extent.height = _h;
             info.extent.depth = 1;
             info.arrayLayers = 1;
+            info.mipLevels = 1;
             info.samples = vk::SampleCountFlagBits::e1;
             info.tiling = vk::ImageTiling::eOptimal;
             info.usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
-            info.mipLevels = 1;
             info.sharingMode = vk::SharingMode::eExclusive;
             info.initialLayout = vk::ImageLayout::eUndefined;
 

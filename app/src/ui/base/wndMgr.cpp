@@ -1,8 +1,6 @@
 #include "wndMgr.h"
 #include "app.h"
 
-#include <iostream>
-
 namespace CC
 {
     std::unique_ptr<WndMgr::WndMgrData> WndMgr::_inst = nullptr;

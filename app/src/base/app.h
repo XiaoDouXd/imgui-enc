@@ -1,6 +1,10 @@
 #pragma once
 #define IMGUI_ENABLE_FREETYPE
 
+#ifndef NDEBUG
+#include <iostream>
+#endif
+
 #include <array>
 #include <list>
 #include <SDL.h>
@@ -142,6 +146,24 @@ namespace CC
         static void checkEvent(const SDL_Event& event);
         static void checkFrame();
         static void checkInit();
+
+    public:
+        template<typename T>
+        static void logInfo(T x)
+        {
+#ifndef NDEBUG
+            std::cout << x;
+#endif
+        }
+
+        template<typename T, typename ...A>
+        static void logInfo(T x, A... args)
+        {
+#ifndef NDEBUG
+            std::cout << x;
+            logInfo(args...);
+#endif
+        }
     };
 
     /// @brief 空类
