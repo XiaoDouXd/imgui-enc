@@ -1,142 +1,152 @@
-#include <string>
+#pragma once
 
 #include "base/wndBase.hpp"
-#include "math.h"
-#include "unit/imgUnit.hpp"
+#include "entrance.h"
+#include "ctrlPanel.hpp"
+#include "picPanel.hpp"
 
 namespace CC::UI
 {
-    /// @brief 主界面 UI
+    static size_t ctrlPanelId = 0;
+    static size_t picPanelId = 0;
+
+    static void openCtrlPanel()
+    {
+        if (ctrlPanelId == 0)
+        {
+            auto data = new WndDataDefault();
+            data->onHideCB.emplace_back([](WndBaseHolder& wnd){ ctrlPanelId = 0; });
+            ctrlPanelId = WndMgr::open<CtrlPanel>(data);
+        }
+    }
+
+    static void openPicPanel()
+    {
+        if (picPanelId == 0)
+        {
+            auto data = new WndDataDefault();
+            data->onHideCB.emplace_back([](WndBaseHolder& wnd)
+            {
+                picPanelId = 0;
+                App::logInfo("CC::MainPanel log - Failure to add file\n");
+            });
+            picPanelId = WndMgr::open<PicPanel>(data);
+        }
+    }
+
     class MainPanel : public WndBase<MainPanel>
     {
     private:
-        // ------------------- 窗口设置
-
+        ImGuiWindowFlags bgWindowFlags  = 0;
         ImGuiWindowFlags windowFlags    = 0;
+        ImGuiDockNodeFlags dockFlags    = 0;
         bool open                       = true;
-
-        // ------------------- 图像绘制相关
-        std::unique_ptr<ImageUnit> Img  = nullptr;
-
-        // ------------------- 背景绘制相关
-
         ImDrawList* drawList            = nullptr;
-        ImVec4 clearColor               = ImVec4(0.22f, 0.22f, 0.22f, 1.00f);
-
     protected:
-        void onShow(WndDataBaseHolder*) override
+        void onShow(WndDataBaseHolder* ) override
         {
-            windowFlags |= ImGuiWindowFlags_NoResize;
-            windowFlags |= ImGuiWindowFlags_NoMove;
-            windowFlags |= ImGuiWindowFlags_NoScrollbar;
-            windowFlags |= ImGuiWindowFlags_NoNav;
-            windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
-            windowFlags |= ImGuiWindowFlags_NoCollapse;
-            windowFlags |= ImGuiWindowFlags_NoTitleBar;
-            windowFlags |= ImGuiWindowFlags_NoBackground;
+            bgWindowFlags |= ImGuiWindowFlags_NoResize;
+            bgWindowFlags |= ImGuiWindowFlags_NoMove;
+            bgWindowFlags |= ImGuiWindowFlags_NoScrollbar;
+            bgWindowFlags |= ImGuiWindowFlags_NoNav;
+            bgWindowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+            bgWindowFlags |= ImGuiWindowFlags_NoCollapse;
+            bgWindowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings;
+            bgWindowFlags |= ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking;
 
-            Img = std::make_unique<ImageUnit>("./i512.png");
-        }
+            windowFlags |= ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
+            windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoNav;
+            windowFlags |= ImGuiWindowFlags_NoDocking;
+
+            dockFlags;
+
+            onRegister();
+        };
 
         void onRefresh() override
         {
-            if (!mainPanelBegin()) return; {
-                drawGrid();
-                drawImg();
-            }
-            mainPanelEnd();
+            docking();
+        };
 
-            // ---- 临时
-            drawTempWnd();
-        }
-
-        void onHide() override {}
-
-    private:
-        // ----------------------------------------------------------------
-
-        /// @brief 绘制头
-        /// @return 窗口是否存在
-        bool mainPanelBegin()
+        bool onWndBegin() override
         {
-            if (!open) App::quit();
-            if (ImGui::Begin("405c77b4-0cb6-4488-86d1-cab26266de9e", &open, windowFlags)) return true;
-            ImGui::End();
+            const ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos(viewport->WorkPos);
+            ImGui::SetNextWindowSize(viewport->WorkSize);
+            ImGui::SetNextWindowViewport(viewport->ID);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+            ImGui::PushStyleColor(ImGuiCol_DockingEmptyBg, (ImU32)ImColor(1.f, 1.f, 1.f, 0.f));
+            if (ImGui::Begin("mainPanel", &open, windowFlags)) return true;
             return false;
         }
 
-        /// @brief 绘制尾
-        void mainPanelEnd()
+        void onWndEnd() override
         {
+            ImGui::End();
+            ImGui::PopStyleVar(4);
+            ImGui::PopStyleColor();
+            drawGridWnd();
+        }
+
+    private:
+        // --------------------------- 网格背景
+        /// @brief 绘制背景及网格
+        void drawGridWnd()
+        {
+            if (ImGui::Begin("mainPanel_bg", &open, bgWindowFlags))
+            {
+                ImGui::SetWindowSize({(float)App::getW() + 128, (float)App::getH() + 128});
+                ImGui::SetWindowPos({-64, -64});
+                static ImVec2 scrolling(0.0f, 0.0f);
+
+                ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();
+                ImVec2 canvas_sz = ImGui::GetContentRegionAvail();
+                if (canvas_sz.x < 50.0f) canvas_sz.x = 50.0f;
+                if (canvas_sz.y < 50.0f) canvas_sz.y = 50.0f;
+                ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
+
+                ImGuiIO& io = ImGui::GetIO();
+                drawList = ImGui::GetWindowDrawList();
+
+                const bool is_active = ImGui::IsItemActive();
+                const ImVec2 origin(canvas_p0.x + scrolling.x, canvas_p0.y + scrolling.y);
+                const ImVec2 mouse_pos_in_canvas(io.MousePos.x - origin.x, io.MousePos.y - origin.y);
+
+                const float mouse_threshold_for_pan = 0.0f;
+                if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left, mouse_threshold_for_pan) && !App::event().isWindowResizing)
+                {
+                    scrolling.x += io.MouseDelta.x;
+                    scrolling.y += io.MouseDelta.y;
+                }
+
+                const float GRID_STEP = 64.0f;
+                for (float x = fmodf(scrolling.x, GRID_STEP); x < canvas_sz.x; x += GRID_STEP)
+                    drawList->AddLine(ImVec2(canvas_p0.x + x, canvas_p0.y), ImVec2(canvas_p0.x + x, canvas_p1.y), IM_COL32(200, 200, 200, 40));
+                for (float y = fmodf(scrolling.y, GRID_STEP); y < canvas_sz.y; y += GRID_STEP)
+                    drawList->AddLine(ImVec2(canvas_p0.x, canvas_p0.y + y), ImVec2(canvas_p1.x, canvas_p0.y + y), IM_COL32(200, 200, 200, 40));
+            }
             ImGui::End();
         }
 
-        // ----------------------------------------------------------------
-
-        /// @brief 背景及网格
-        void drawGrid()
+        // --------------------------- 刷新窗口停靠
+        void docking()
         {
-            ImGui::SetWindowSize({(float)App::getW() + 128, (float)App::getH() + 128});
-            ImGui::SetWindowPos({-64, -64});
-            static ImVec2 scrolling(0.0f, 0.0f);
-
-            ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();
-            ImVec2 canvas_sz = ImGui::GetContentRegionAvail();
-            if (canvas_sz.x < 50.0f) canvas_sz.x = 50.0f;
-            if (canvas_sz.y < 50.0f) canvas_sz.y = 50.0f;
-            ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
-
-            ImGuiIO& io = ImGui::GetIO();
-            drawList = ImGui::GetWindowDrawList();
-
-            const bool is_active = ImGui::IsItemActive();
-            const ImVec2 origin(canvas_p0.x + scrolling.x, canvas_p0.y + scrolling.y);
-            const ImVec2 mouse_pos_in_canvas(io.MousePos.x - origin.x, io.MousePos.y - origin.y);
-
-            const float mouse_threshold_for_pan = 0.0f;
-            if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left, mouse_threshold_for_pan) && !App::event().isWindowResizing)
-            {
-                scrolling.x += io.MouseDelta.x;
-                scrolling.y += io.MouseDelta.y;
-            }
-
-            const float GRID_STEP = 64.0f;
-            for (float x = fmodf(scrolling.x, GRID_STEP); x < canvas_sz.x; x += GRID_STEP)
-                drawList->AddLine(ImVec2(canvas_p0.x + x, canvas_p0.y), ImVec2(canvas_p0.x + x, canvas_p1.y), IM_COL32(200, 200, 200, 40));
-            for (float y = fmodf(scrolling.y, GRID_STEP); y < canvas_sz.y; y += GRID_STEP)
-                drawList->AddLine(ImVec2(canvas_p0.x, canvas_p0.y + y), ImVec2(canvas_p1.x, canvas_p0.y + y), IM_COL32(200, 200, 200, 40));
-
-            CC::App::setBGColor(clearColor);
+            ImGui::DockSpace(ImGui::GetID("mainPanel_docking"), {0.f, 0.f}, dockFlags);
         }
 
-        void drawImg()
+        // ---------------------------- 绑定事件
+        void onRegister()
         {
-            if (drawList)
-            {
-                drawList->AddImage(Img->getId(), {0, 0}, {5000, 5000});
-            }
+            registerEvent<StaticEvent::OnFilePush>([this](){this->onOpenFile();});
         }
 
-        /// @brief 绘制临时窗口
-        void drawTempWnd()
+        void onOpenFile()
         {
-            // 临时
-            {
-                static float f = 0.0f;
-
-                ImGui::Begin("测试用临时窗口");                          // Create a window called "Hello, world!" and append into it.
-                ImGui::Text("行文本.");                                 // Display some text (you can use a format strings too)
-
-                ImGui::SliderFloat("浮点数", &f, 0.0f, 1.0f);           // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::ColorEdit3("背景色", (float*)&clearColor);       // Edit 3 floats representing a color
-
-                if (ImGui::Button("关闭窗口"))                          // Buttons return true when clicked (most widgets return true when edited/activated)
-                    App::quit();
-                ImGui::SameLine();
-
-                ImGui::Text("程序刷新率 %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-                ImGui::End();
-            }
+            openCtrlPanel();
+            openPicPanel();
         }
     };
 }

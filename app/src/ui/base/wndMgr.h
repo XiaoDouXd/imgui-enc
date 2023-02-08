@@ -37,17 +37,22 @@ namespace CC
     public:
         template<class T>
         requires std::is_base_of<WndBase<T>, T>::value
-        static size_t open(WndDataBaseHolder* data = nullptr)
+        static size_t open(WndDataBaseHolder* data = nullptr, std::string windowName = "")
         {
             auto classId = typeid(T).hash_code();
+            windowName = windowName.empty() ? typeid(T).name() : windowName;
             if (_inst->hidenWndPool.find(classId) == _inst->hidenWndPool.end() ||
                 _inst->hidenWndPool[classId].empty()
             )
             {
                 auto wndId = newId();
                 WndBaseHolder* newWnd = new T();
+                if (data) newWnd->onHideCB = data->onHideCB;
+
                 newWnd->onInit();
                 newWnd->onShow(data);
+                if (data) for (auto& showCB : data->onShowCB) showCB(*newWnd, *data);
+                if (data) delete data;
                 if (newWnd->_showingWndId)
                 {
                     newWnd->onHide();
@@ -63,6 +68,7 @@ namespace CC
                 _inst->shownWndPool[wndId] = itr;
 
                 newWnd->_showingWndId = wndId;
+                newWnd->_nameWithId = std::string(windowName + "_" + std::to_string(newWnd->_showingWndId));
                 _inst->allWndPool.insert(wndId);
                 return wndId;
             }
@@ -70,7 +76,11 @@ namespace CC
             {
                 auto& l = _inst->hidenWndPool[classId];
                 auto itr = l.begin();
+                if (data) (*(itr->itr))->onHideCB = data->onHideCB;
+
                 (*(itr->itr))->onShow(data);
+                if (data) for (auto& showCB : data->onShowCB) showCB(*(*(itr->itr)), *data);
+                if (data) delete data;
                 if ((*(itr->itr))->_showingWndId)
                 {
                     (*(itr->itr))->onHide();
@@ -84,6 +94,7 @@ namespace CC
 
                 auto wndId = itr->wndId;
                 (*(itr->itr))->_showingWndId = wndId;
+                (*(itr->itr))->_nameWithId = std::string(windowName + "_"  + std::to_string((*(itr->itr))->_showingWndId));
                 l.erase(itr);
                 return wndId;
             }

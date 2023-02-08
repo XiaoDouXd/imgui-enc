@@ -1,35 +1,25 @@
+#include "core/fileCtrl.h"
 #include "entrance.h"
+
+#include "ui/ctrlPanel.hpp"
 #include "ui/mainPanel.hpp"
+#include "ui/picPanel.hpp"
 
 namespace CC
 {
-    static void OnDropFile(std::filesystem::directory_entry dir)
-    {
-        if (dir.is_directory())
-        {
-            auto extension = std::filesystem::path(".png");
-            auto f_itr = std::filesystem::directory_iterator(dir);
-            for(auto& f : f_itr)
-            {
-                
-            }
-        }
-    }
-
     /// @brief 主循环启动器
     class MainUnit : public CC::LoopUnit
     {
     public:
         MainUnit() : CC::LoopUnit() {}
-        static size_t mainPanelId;
 
         void start() override
         {
             using namespace CC;
             using namespace CC::UI;
-            mainPanelId = WndMgr::open<MainPanel>();
 
-            StaticEventMgr::registerEvent<StaticEvent::OnDropFile>((std::ptrdiff_t)this, OnDropFile);
+            WndMgr::open<MainPanel>();
+            FileCtrl::init();
         }
 
         void update() override
@@ -44,7 +34,7 @@ namespace CC
                 App::quit();
         }
     };
-    size_t MainUnit::mainPanelId = 0;
+
     static std::unique_ptr<MainUnit> mainUnit = nullptr;
 }
 

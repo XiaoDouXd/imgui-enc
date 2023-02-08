@@ -1,3 +1,5 @@
+#pragma once
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -19,45 +21,56 @@ namespace CC::UI
     /// @brief 图像组件
     class ImageUnit
     {
-    private:
-        VkDescriptorSet _ds;
-        int _w;
-        int _h;
-        int _channels;
-
-        vk::ImageView _imgView;
-        vk::Image _img;
-        vk::DeviceMemory _imgMemory;
-        vk::Sampler _sampler;
-        vk::Buffer _uBuf;
-        vk::DeviceMemory _uBufMemory;
-
-        bool _isReleased = false;
+    public:
+        /// @brief 图像组件的图像源 不要 free 这的指针!!
+        struct ImageUnitSrcData
+        {
+            uint8_t* data       = nullptr;
+            size_t   size       = 0;
+            int      w          = 0;
+            int      h          = 0;
+            int      channels   = 0;
+        };
 
     public:
-        ImageUnit(uint8_t* buf, size_t size, int w, int h, int channels,
-        std::function<void(uint8_t*, size_t)> releaseHandle = stbRelease) :
+        ImageUnit(uint8_t* buf, size_t size, int w, int h, int channels) :
         _w(w), _h(h), _channels(channels)
         {
+            _srcData = buf;
+            _srcDataSize = size;
+
             if (_w <= 0 || _h <= 0) { _isReleased = true; return; }
-            loadAndReleaseData(buf, size, releaseHandle);
+            loadAndReleaseData();
+        }
+
+        ImageUnit(std::string filename)
+        {
+            // --------------------- 加载图像文件到内存
+            _channels = 4;
+            _srcData = stbi_load(filename.c_str(), &_w, &_h, 0, _channels);
+            if (!_srcData) throw Exce(__LINE__, __FILE__, "ImgUnit: 读取图像文件错误");
+            _srcDataSize = _w * _h * _channels;
+
+            // --------------------- 提呈到 vk
+            loadAndReleaseData();
         }
 
         ImageUnit(const char* filename)
         {
             // --------------------- 加载图像文件到内存
             _channels = 4;
-            uint8_t* data = stbi_load(filename, &_w, &_h, 0, _channels);
-            if (!data) throw Exce(__LINE__, __FILE__, "ImgUnit: 读取图像文件错误");
-            size_t size = _w * _h * _channels;
+            _srcData = stbi_load(filename, &_w, &_h, 0, _channels);
+            if (!_srcData) throw Exce(__LINE__, __FILE__, "ImgUnit: 读取图像文件错误");
+            _srcDataSize = _w * _h * _channels;
 
             // --------------------- 提呈到 vk
-            loadAndReleaseData(data, size);
+            loadAndReleaseData();
         }
 
         void release()
         {
             if (_isReleased) return;
+            releaseSrcData();
             auto& dev = VulkanMgr::getDev();
             ImGui_ImplVulkan_RemoveTexture(_ds);
             dev.freeMemory(_uBufMemory);
@@ -68,6 +81,22 @@ namespace CC::UI
             dev.freeMemory(_imgMemory);
             _isReleased = true;
         }
+
+        void releaseSrcData(std::function<void(uint8_t*, size_t)> releaseHandle = stbRelease)
+        {
+            if (_isReleased) return;
+            if (!_srcData) return;
+            releaseHandle(_srcData, _srcDataSize);
+
+            _srcData = nullptr;
+            _srcDataSize = 0;
+        }
+
+        ImageUnitSrcData getSrcData()
+        {
+            if (!_srcData) return {};
+            return {_srcData, _srcDataSize, _w, _h, _channels};
+        };
 
         ImTextureID getId()
         {
@@ -82,7 +111,7 @@ namespace CC::UI
             stbi_image_free(data);
         }
 
-        void loadAndReleaseData(uint8_t* data, size_t size, std::function<void(uint8_t*, size_t)> releaseHandle = stbRelease)
+        void loadAndReleaseData()
         {
             // 申请内存和显存
             vk::ImageCreateInfo info;
@@ -134,7 +163,7 @@ namespace CC::UI
 
             // 创建内存映射并绑定到显存中 并在提呈后解绑
             vk::BufferCreateInfo buf_info;
-            buf_info.size = size;
+            buf_info.size = _srcDataSize;
             buf_info.usage = vk::BufferUsageFlagBits::eTransferSrc;
             buf_info.sharingMode = vk::SharingMode::eExclusive;
             _uBuf = VulkanMgr::getDev().createBuffer(buf_info);
@@ -145,16 +174,13 @@ namespace CC::UI
             VulkanMgr::getDev().bindBufferMemory(_uBuf, _uBufMemory, 0);
 
             // 提呈到显存
-            void* map = VulkanMgr::getDev().mapMemory(_uBufMemory, 0, size);
-            memcpy(map, data, size);
+            void* map = VulkanMgr::getDev().mapMemory(_uBufMemory, 0, _srcDataSize);
+            memcpy(map, _srcData, _srcDataSize);
             std::array<vk::MappedMemoryRange, 1> ranges = {};
             ranges[0].setMemory(_uBufMemory);
-            ranges[0].size = size;
+            ranges[0].size = _srcDataSize;
             VulkanMgr::getDev().flushMappedMemoryRanges(ranges);
             VulkanMgr::getDev().unmapMemory(_uBufMemory);
-
-            // 释放内存
-            releaseHandle(data, size);
 
             // 提呈渲染指令
             vk::CommandPool cmdPool = ImguiMgr::getHWnd().Frames[ImguiMgr::getHWnd().FrameIndex].CommandPool;
@@ -213,5 +239,22 @@ namespace CC::UI
             VulkanMgr::getQueue().submit(end_info);
             VulkanMgr::getDev().waitIdle();
         }
+
+    private:
+        VkDescriptorSet _ds;
+        int _w;
+        int _h;
+        int _channels;
+
+        vk::ImageView _imgView;
+        vk::Image _img;
+        vk::DeviceMemory _imgMemory;
+        vk::Sampler _sampler;
+        vk::Buffer _uBuf;
+        vk::DeviceMemory _uBufMemory;
+
+        uint8_t* _srcData      = nullptr;
+        size_t _srcDataSize    = 0;
+        bool _isReleased    = false;
     };
 }

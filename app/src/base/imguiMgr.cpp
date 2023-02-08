@@ -223,6 +223,8 @@ namespace CC
 
     void ImguiMgr::presentFont()
     {
+        // 还没有顺利找到 imgui 的动态字体解决方案, 先推进别的
+
         // static const int nameMaxSize = 25;
         // static const char* name = "source han san scn normal";
         // auto io = CC::ImguiMgr::getIO();
@@ -334,6 +336,7 @@ namespace CC
         styleContext.DisplaySafeAreaPadding = {4, 3};
 
         getIO().FontGlobalScale = 0.8f;
+        getIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     }
 
     void ImguiMgr::disableLoading()

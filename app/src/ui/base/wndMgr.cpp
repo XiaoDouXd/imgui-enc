@@ -21,6 +21,7 @@ namespace CC
 
         auto itr = _inst->shownWndPool[wndId];
         (*itr)->onHide();
+        (*itr)->lateHide();
         (*itr)->_showingWndId = 0;
         _inst->hidenWndPool[(*itr)->classId].push_front({itr, wndId, TimeMgr::now()});
         _inst->shownWndPool.erase(wndId);
@@ -81,6 +82,7 @@ namespace CC
     void WndBaseHolder::closeSelf()
     {
         onHide();
+        lateHide();
         for (auto& hashcode : _events)
             StaticEventMgr::unregisterEvent(hashcode, (std::ptrdiff_t) this);
 
@@ -88,5 +90,10 @@ namespace CC
             _showingWndId = SIZE_MAX;
         else
             WndMgr::close(_showingWndId);
+    }
+
+    void WndBaseHolder::lateHide()
+    {
+        for (auto& hideCB : onHideCB) hideCB(*this);
     }
 }
