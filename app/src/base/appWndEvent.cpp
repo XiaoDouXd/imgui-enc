@@ -2,6 +2,8 @@
 #include "app.h"
 #include "entrance.h"
 
+#include "shortcut.h"
+
 namespace CC
 {
     enum class PosEdgeType : uint8_t { NotEdge = 0, LU = 5, LM = 4, LD = 8, MU = 1, MD = 3, RU = 6, RM = 2, RD = 7 };
@@ -127,7 +129,9 @@ namespace CC
                         CC_LIMIT_W_WIDTH(wSizeW - mPosX + mPosXprev),
                         CC_LIMIT_W_HEIGHT(wSizeH - mPosY + mPosYprev));
                     mPosXprev = mPosX; mPosYprev = mPosY;
+
                     __app_caller::event().isWindowResizing = true;
+                    StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
             else if (mousePullFrom == PosEdgeType::LU)
@@ -135,6 +139,7 @@ namespace CC
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 __app_caller::event().isWindowResizing = false;
+                StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
         else if (mousePosType == PosEdgeType::LD || mousePullFrom == PosEdgeType::LD)
@@ -159,7 +164,9 @@ namespace CC
                         CC_LIMIT_W_WIDTH(wSizeW - mPosX + mPosXprev),
                         CC_LIMIT_W_HEIGHT(wSizeH + mPosY - mPosYprev));
                     mPosXprev = mPosX; mPosYprev = mPosY;
+
                     __app_caller::event().isWindowResizing = true;
+                    StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
             else if (mousePullFrom == PosEdgeType::LD)
@@ -167,6 +174,7 @@ namespace CC
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 __app_caller::event().isWindowResizing = false;
+                StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
         else if (mousePosType == PosEdgeType::RU || mousePullFrom == PosEdgeType::RU)
@@ -191,7 +199,9 @@ namespace CC
                         CC_LIMIT_W_WIDTH(wSizeW + mPosX - mPosXprev),
                         CC_LIMIT_W_HEIGHT(wSizeH - mPosY + mPosYprev));
                     mPosXprev = mPosX; mPosYprev = mPosY;
+
                     __app_caller::event().isWindowResizing = true;
+                    StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
             else if (mousePullFrom == PosEdgeType::RU)
@@ -199,6 +209,7 @@ namespace CC
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 __app_caller::event().isWindowResizing = false;
+                StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
         else if (mousePosType == PosEdgeType::RD || mousePullFrom == PosEdgeType::RD)
@@ -219,7 +230,9 @@ namespace CC
                         CC_LIMIT_W_WIDTH(wSizeW + mPosX - mPosXprev),
                         CC_LIMIT_W_HEIGHT(wSizeH + mPosY - mPosYprev));
                     mPosXprev = mPosX; mPosYprev = mPosY;
+
                     __app_caller::event().isWindowResizing = true;
+                    StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
             else if (mousePullFrom == PosEdgeType::RD)
@@ -227,6 +240,7 @@ namespace CC
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 __app_caller::event().isWindowResizing = false;
+                StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
         else if (mousePosType == PosEdgeType::LM || mousePullFrom == PosEdgeType::LM)
@@ -251,7 +265,9 @@ namespace CC
                         CC_LIMIT_W_WIDTH(wSizeW - mPosX + mPosXprev),
                         wSizeH);
                     mPosXprev = mPosX; mPosYprev = mPosY;
+
                     __app_caller::event().isWindowResizing = true;
+                    StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
             else if (mousePullFrom == PosEdgeType::LM)
@@ -259,6 +275,7 @@ namespace CC
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 __app_caller::event().isWindowResizing = false;
+                StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
         else if (mousePosType == PosEdgeType::MU || mousePullFrom == PosEdgeType::MU)
@@ -283,7 +300,9 @@ namespace CC
                         wSizeW,
                         CC_LIMIT_W_HEIGHT(wSizeH - mPosY + mPosYprev));
                     mPosXprev = mPosX; mPosYprev = mPosY;
+
                     __app_caller::event().isWindowResizing = true;
+                    StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
             else if (mousePullFrom == PosEdgeType::MU)
@@ -291,6 +310,7 @@ namespace CC
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 __app_caller::event().isWindowResizing = false;
+                StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
         else if (mousePosType == PosEdgeType::RM || mousePullFrom == PosEdgeType::RM)
@@ -311,7 +331,9 @@ namespace CC
                         CC_LIMIT_W_WIDTH(wSizeW + mPosX - mPosXprev),
                         wSizeH);
                     mPosXprev = mPosX; mPosYprev = mPosY;
+
                     __app_caller::event().isWindowResizing = true;
+                    StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
             else if (mousePullFrom == PosEdgeType::RM)
@@ -319,6 +341,7 @@ namespace CC
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 __app_caller::event().isWindowResizing = false;
+                StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
         else if (mousePosType == PosEdgeType::MD || mousePullFrom == PosEdgeType::MD)
@@ -339,7 +362,9 @@ namespace CC
                         wSizeW,
                         CC_LIMIT_W_HEIGHT(wSizeH + mPosY - mPosYprev));
                     mPosXprev = mPosX; mPosYprev = mPosY;
+
                     __app_caller::event().isWindowResizing = true;
+                    StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
             else if (mousePullFrom == PosEdgeType::MD)
@@ -347,6 +372,7 @@ namespace CC
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 __app_caller::event().isWindowResizing = false;
+                StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
 
@@ -401,6 +427,20 @@ namespace CC
         }
     }
 
+    static void shortcut(const SDL_Event& event)
+    {
+        if (event.type == SDL_KEYDOWN && !event.key.repeat)
+        {
+            for (size_t i = 0; i < ShortcutMap.size(); i++)
+            {
+                if (!isHit(ShortcutMap[i],
+                    (SDL_KeyCode)event.key.keysym.sym,
+                    (SDL_Keymod)event.key.keysym.mod)) continue;
+                StaticEventMgr::broadcastAsync<StaticEvent::OnShortcut>((Shortcut)i);
+            }
+        }
+    }
+
     // -----------------------------------------------------------------------------------------
 
     /// @brief 事件处理数据初始化
@@ -423,5 +463,6 @@ namespace CC
         resizeWindow();
         moveWindow();
         dropFile(event);
+        shortcut(event);
     }
 }

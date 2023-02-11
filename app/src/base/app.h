@@ -33,7 +33,9 @@ namespace CC
         First = 0,
         Sceond = 1,
         Third = 2,
-        Wnd = 5,
+        WndBottom = 5,
+        WndNormal = 6,
+        WndTop = 7,
         Last = CC_MAX_LOOP_LAYER_IDX,
     };
 

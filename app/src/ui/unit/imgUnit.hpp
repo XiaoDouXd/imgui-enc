@@ -92,13 +92,13 @@ namespace CC::UI
             _srcDataSize = 0;
         }
 
-        ImageUnitSrcData getSrcData()
+        const ImageUnitSrcData& desc() const
         {
-            if (!_srcData) return {};
-            return {_srcData, _srcDataSize, _w, _h, _channels};
+            if (!_srcData) return _emptyImgUnitDesc;
+            return *_desc;
         };
 
-        ImTextureID getId()
+        ImTextureID getId() const
         {
             return _ds;
         }
@@ -238,6 +238,13 @@ namespace CC::UI
             cmdBuf.back().end();
             VulkanMgr::getQueue().submit(end_info);
             VulkanMgr::getDev().waitIdle();
+
+            _desc = std::make_unique<ImageUnitSrcData>();
+            _desc->data = _srcData;
+            _desc->size = _srcDataSize;
+            _desc->w = _w;
+            _desc->h = _h;
+            _desc->channels = _channels;
         }
 
     private:
@@ -256,5 +263,8 @@ namespace CC::UI
         uint8_t* _srcData      = nullptr;
         size_t _srcDataSize    = 0;
         bool _isReleased    = false;
+
+        std::unique_ptr<ImageUnitSrcData> _desc;
+        static const ImageUnitSrcData _emptyImgUnitDesc;
     };
 }

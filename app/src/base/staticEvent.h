@@ -2,12 +2,19 @@
 
 #include <filesystem>
 
+#include "shortcut.h"
 #include "staticEventMgr.h"
 
 namespace CC
 {
     namespace StaticEvent
     {
+        // ======================================= 窗口事件
+        /// @brief 开始调整窗口大小
+        class OnWindowResizeBegin : public EventTypeBase<OnWindowResizeBegin> {};
+        /// @brief 结束调整窗口大小
+        class OnWindowResizeEnd : public EventTypeBase<OnWindowResizeEnd> {};
+
         // ======================================= 鼠标事件
         /// @brief 鼠标点击事件
         class OnMouseClick : public EventTypeBase<OnMouseClick, uint8_t> {};
@@ -19,6 +26,12 @@ namespace CC
         class OnMouseUp : public EventTypeBase<OnMouseUp, uint8_t> {};
         /// @brief 鼠标移动
         class OnMouseMove : public EventTypeBase<OnMouseMove> {};
+
+        // ======================================= 键盘事件
+        /// @brief 键盘事件
+        class OnKeyDown : public EventTypeBase<OnKeyDown, int> {};
+        /// @brief 快捷键
+        class OnShortcut : public EventTypeBase<OnShortcut, Shortcut> {};
 
         // ======================================= 文件事件
         /// @brief 文件拖拽

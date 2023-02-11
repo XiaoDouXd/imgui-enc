@@ -18,8 +18,10 @@ namespace CC
             using namespace CC;
             using namespace CC::UI;
 
-            WndMgr::open<MainPanel>();
             FileCtrl::init();
+            ClipCtrl::init();
+
+            WndMgr::open<MainPanel>();
         }
 
         void update() override
@@ -35,6 +37,7 @@ namespace CC
         }
     };
 
+    UI::MainPanel_cover* UI::MainPanel_cover::_this = nullptr;
     static std::unique_ptr<MainUnit> mainUnit = nullptr;
 }
 

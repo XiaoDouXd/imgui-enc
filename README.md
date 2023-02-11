@@ -1,4 +1,4 @@
-# BUILDING...   建造中...
+# 切图工具
 
 #### 一、编译环境：
 
@@ -37,23 +37,6 @@ sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.1.126-xenial.list http://p
 sudo apt update
 sudo apt install vulkan-sdk
 ```
-
-##### 4. 配置 freeType2
-
-windows:
-
-- 前往 https://freetype.org/
-- 下载合适版本的 freetype 并用目标编译器编译
-- 将编译好的二进制文件和头文件分别放入编译器的 `bin&share、include` 目录
-
-windows 且使用 mingw32-w64 编译的话可以在这里下载到编译好的库 https://packages.msys2.org/package/mingw-w64-x86_64-freetype
-
-linux:
-
-- 源码位置 `cd ${freetype_source_dir}`
-- 目标位置 `./configure --prefix=/usr/local/freetype`
-- 编译 `make`
-- 安装编译结果 `make install`
 
 #### 二、生成 rc
 

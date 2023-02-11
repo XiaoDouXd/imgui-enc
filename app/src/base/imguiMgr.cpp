@@ -335,7 +335,7 @@ namespace CC
         styleContext.SelectableTextAlign = {0, 0};
         styleContext.DisplaySafeAreaPadding = {4, 3};
 
-        getIO().FontGlobalScale = 0.8f;
+        getIO().FontGlobalScale = 0.78125f;
         getIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     }
 

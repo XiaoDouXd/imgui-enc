@@ -1,25 +1,18 @@
 #pragma once
 
-#include "base/wndBase.hpp"
+#include <list>
+#include <sstream>
+
 #include "entrance.h"
+#include "imgui_internal.h"
+
+#include "base/wndBase.hpp"
 #include "ctrlPanel.hpp"
 #include "picPanel.hpp"
 
 namespace CC::UI
 {
-    static size_t ctrlPanelId = 0;
     static size_t picPanelId = 0;
-
-    static void openCtrlPanel()
-    {
-        if (ctrlPanelId == 0)
-        {
-            auto data = new WndDataDefault();
-            data->onHideCB.emplace_back([](WndBaseHolder& wnd){ ctrlPanelId = 0; });
-            ctrlPanelId = WndMgr::open<CtrlPanel>(data);
-        }
-    }
-
     static void openPicPanel()
     {
         if (picPanelId == 0)
@@ -34,37 +27,104 @@ namespace CC::UI
         }
     }
 
+    /// @brief 主窗口遮盖
+    class MainPanel_cover : public WndBase<MainPanel_cover>
+    {
+    public:
+        MainPanel_cover() : WndBase<MainPanel_cover>(LoopLayer::WndTop) {}
+        static void showCover(bool show)
+        {
+            if (!_this) return;
+            _this->open = show;
+        }
+
+    private:
+        ImGuiWindowFlags windowFlags    = 0;
+        bool open                       = true;
+
+        static MainPanel_cover* _this;
+    protected:
+        void onShow(WndDataBaseHolder*) override
+        {
+            windowFlags |= ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
+            windowFlags |= ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoNav;
+            windowFlags |= ImGuiWindowFlags_NoDocking;
+
+            if (_this) { closeSelf(); return; }
+            _this = this;
+
+            registerEvent<StaticEvent::OnWindowResizeBegin>([](){ showCover(true); });
+            registerEvent<StaticEvent::OnWindowResizeEnd>([](){ showCover(false); });
+        }
+
+        void onRefresh() override
+        {
+            ImGui::SetWindowSize({(float)App::getW() + 128, (float)App::getH() + 128});
+            ImGui::SetWindowPos({-64, -64});
+            ImGui::BringWindowToFocusFront(ImGui::GetCurrentWindow());
+        }
+
+        bool onWndBegin() override
+        {
+            if (open)
+            {
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, (ImU32)ImColor(1.f, 1.f, 1.f, 0.f));
+                ImGui::Begin("mainPanel_cover", nullptr, windowFlags);
+                return true;
+            }
+            return false;
+        }
+
+        void onWndEnd() override
+        {
+            if (open)
+            {
+                ImGui::End();
+                ImGui::PopStyleColor();
+            }
+        }
+
+        void onHide() override
+        {
+            _this = nullptr;
+        }
+    };
+
     class MainPanel : public WndBase<MainPanel>
     {
     private:
-        ImGuiWindowFlags bgWindowFlags  = 0;
         ImGuiWindowFlags windowFlags    = 0;
         ImGuiDockNodeFlags dockFlags    = 0;
         bool open                       = true;
         ImDrawList* drawList            = nullptr;
+        ImVec2 _pLU                     = ImVec2(0, 0);
+        ImVec2 _pRD                     = ImVec2(0, 0);
+        int _lineWid                    = 25;
+
+        /// @brief 背景的 log 信息
+        std::list<std::string> _info;
+
     protected:
         void onShow(WndDataBaseHolder* ) override
         {
-            bgWindowFlags |= ImGuiWindowFlags_NoResize;
-            bgWindowFlags |= ImGuiWindowFlags_NoMove;
-            bgWindowFlags |= ImGuiWindowFlags_NoScrollbar;
-            bgWindowFlags |= ImGuiWindowFlags_NoNav;
-            bgWindowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
-            bgWindowFlags |= ImGuiWindowFlags_NoCollapse;
-            bgWindowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings;
-            bgWindowFlags |= ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking;
-
+            CC::App::setBGColor(ImVec4(0.22f, 0.22f, 0.22f, 1.00f));
             windowFlags |= ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
-            windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoNav;
+            windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar;
             windowFlags |= ImGuiWindowFlags_NoDocking;
 
             dockFlags;
+
+            WndMgr::open<MainPanel_cover>();
+            MainPanel_cover::showCover(false);
 
             onRegister();
         };
 
         void onRefresh() override
         {
+            drawList = ImGui::GetWindowDrawList();
+            ImGui::SetWindowFontScale(1.f);
+            drawGridWnd();
             docking();
         };
 
@@ -79,6 +139,8 @@ namespace CC::UI
             ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
             ImGui::PushStyleColor(ImGuiCol_DockingEmptyBg, (ImU32)ImColor(1.f, 1.f, 1.f, 0.f));
+            _pLU = viewport->WorkPos;
+            _pRD = viewport->WorkSize;
             if (ImGui::Begin("mainPanel", &open, windowFlags)) return true;
             return false;
         }
@@ -88,47 +150,34 @@ namespace CC::UI
             ImGui::End();
             ImGui::PopStyleVar(4);
             ImGui::PopStyleColor();
-            drawGridWnd();
         }
 
     private:
-        // --------------------------- 网格背景
-        /// @brief 绘制背景及网格
+        // --------------------------- 文字背景
+        /// @brief 绘制背景
         void drawGridWnd()
         {
-            if (ImGui::Begin("mainPanel_bg", &open, bgWindowFlags))
+            static float startX = 24.f;
+            static float startY = 6.f;
+
+            drawList->AddRectFilled({_pLU.x + 12, _pLU.y - 10}, {_pLU.x + 16, _pRD.y + 10}, ImColor(0.4f, 0.4f, 0.4f));
+            if (FileCtrl::getInst().fileQueue.empty())
             {
-                ImGui::SetWindowSize({(float)App::getW() + 128, (float)App::getH() + 128});
-                ImGui::SetWindowPos({-64, -64});
-                static ImVec2 scrolling(0.0f, 0.0f);
-
-                ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();
-                ImVec2 canvas_sz = ImGui::GetContentRegionAvail();
-                if (canvas_sz.x < 50.0f) canvas_sz.x = 50.0f;
-                if (canvas_sz.y < 50.0f) canvas_sz.y = 50.0f;
-                ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
-
-                ImGuiIO& io = ImGui::GetIO();
-                drawList = ImGui::GetWindowDrawList();
-
-                const bool is_active = ImGui::IsItemActive();
-                const ImVec2 origin(canvas_p0.x + scrolling.x, canvas_p0.y + scrolling.y);
-                const ImVec2 mouse_pos_in_canvas(io.MousePos.x - origin.x, io.MousePos.y - origin.y);
-
-                const float mouse_threshold_for_pan = 0.0f;
-                if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left, mouse_threshold_for_pan) && !App::event().isWindowResizing)
+                startY = -10.f;
+                for (auto pY = startY; pY < _pRD.y; pY += _lineWid)
                 {
-                    scrolling.x += io.MouseDelta.x;
-                    scrolling.y += io.MouseDelta.y;
+                    drawList->AddText({startX, pY}, (ImU32)ImColor(0.4f, 0.4f, 0.4f), ">> 请，拖拽图片文件或文件夹到窗口。");
                 }
-
-                const float GRID_STEP = 64.0f;
-                for (float x = fmodf(scrolling.x, GRID_STEP); x < canvas_sz.x; x += GRID_STEP)
-                    drawList->AddLine(ImVec2(canvas_p0.x + x, canvas_p0.y), ImVec2(canvas_p0.x + x, canvas_p1.y), IM_COL32(200, 200, 200, 40));
-                for (float y = fmodf(scrolling.y, GRID_STEP); y < canvas_sz.y; y += GRID_STEP)
-                    drawList->AddLine(ImVec2(canvas_p0.x, canvas_p0.y + y), ImVec2(canvas_p1.x, canvas_p0.y + y), IM_COL32(200, 200, 200, 40));
             }
-            ImGui::End();
+            else
+            {
+                startY = 4.f; auto pY = startY;
+                static std::string outputDirView;
+                outputDirView = "outputDir = \"" + FileCtrl::getInst().curDir.string() + "\"";
+                drawList->AddText({startX, pY}, (ImU32)ImColor(0.4f, 0.4f, 0.4f), outputDirView.c_str()); pY += _lineWid;
+                drawList->AddText({startX, pY}, (ImU32)ImColor(0.4f, 0.4f, 0.4f),
+                "// -----------------------------------------------------------------------------------------------------");
+            }
         }
 
         // --------------------------- 刷新窗口停靠
@@ -140,13 +189,7 @@ namespace CC::UI
         // ---------------------------- 绑定事件
         void onRegister()
         {
-            registerEvent<StaticEvent::OnFilePush>([this](){this->onOpenFile();});
-        }
-
-        void onOpenFile()
-        {
-            openCtrlPanel();
-            openPicPanel();
+            registerEvent<StaticEvent::OnFilePush>(openPicPanel);
         }
     };
 }

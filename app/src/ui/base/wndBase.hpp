@@ -53,7 +53,7 @@ namespace CC
         const char* getNameId() const { return _nameWithId.c_str(); }
 
     protected:
-        WndBaseHolder(size_t classId) : LoopUnit(LoopLayer::Wnd), classId(classId) {}
+        WndBaseHolder(size_t classId, LoopLayer loopLayer) : LoopUnit(loopLayer), classId(classId) {}
         virtual ~WndBaseHolder()
         {
             for (auto& hashcode : _events)
@@ -124,7 +124,7 @@ namespace CC
     class WndBase : public WndBaseHolder
     {
     protected:
-        WndBase() : WndBaseHolder(typeid(T).hash_code()) {}
+        WndBase(LoopLayer loopLayer = LoopLayer::WndNormal) : WndBaseHolder(typeid(T).hash_code(), loopLayer) {}
         virtual ~WndBase() { onDestroy(); }
     };
 }

@@ -45,21 +45,10 @@ namespace CC
                 _inst->hidenWndPool[classId].empty()
             )
             {
-                auto wndId = newId();
                 WndBaseHolder* newWnd = new T();
-                if (data) newWnd->onHideCB = data->onHideCB;
+                newWnd->_showingWndId = SIZE_MAX;
 
-                newWnd->onInit();
-                newWnd->onShow(data);
-                if (data) for (auto& showCB : data->onShowCB) showCB(*newWnd, *data);
-                if (data) delete data;
-                if (newWnd->_showingWndId)
-                {
-                    newWnd->onHide();
-                    delete newWnd;
-                    return 0;
-                }
-
+                auto wndId = newId();
                 auto& l = _inst->wndClassPool[classId];
                 l.push_back(newWnd);
                 auto itr = --l.end();
@@ -70,6 +59,21 @@ namespace CC
                 newWnd->_showingWndId = wndId;
                 newWnd->_nameWithId = std::string(windowName + "_" + std::to_string(newWnd->_showingWndId));
                 _inst->allWndPool.insert(wndId);
+
+                if (data) newWnd->onHideCB = data->onHideCB;
+                newWnd->onInit();
+                newWnd->onShow(data);
+                if (data) for (auto& showCB : data->onShowCB) showCB(*newWnd, *data);
+                if (data) delete data;
+                if (newWnd->_showingWndId == SIZE_MAX)
+                {
+                    l.erase(itr);
+                    _inst->shownWndPool.erase(wndId);
+                    _inst->allWndPool.erase(wndId);
+                    delete newWnd;
+                    return 0;
+                }
+
                 return wndId;
             }
             else
@@ -81,7 +85,7 @@ namespace CC
                 (*(itr->itr))->onShow(data);
                 if (data) for (auto& showCB : data->onShowCB) showCB(*(*(itr->itr)), *data);
                 if (data) delete data;
-                if ((*(itr->itr))->_showingWndId)
+                if ((*(itr->itr))->_showingWndId == SIZE_MAX)
                 {
                     (*(itr->itr))->onHide();
                     (*(itr->itr))->_showingWndId = 0;
