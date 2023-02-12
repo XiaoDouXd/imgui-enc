@@ -6,13 +6,13 @@
 #include "core/fileCtrl.h"
 #include "base/wndBase.hpp"
 #include "math.h"
-#include "unit/imgUnit.hpp"
+#include "unit/imgUnit.h"
 
 #include "imgui_internal.h"
 
 namespace CC::UI
 {
-    const ImageUnit::ImageUnitSrcData ImageUnit::_emptyImgUnitDesc = {};
+    const ImageUnit::ImageUnitDesc ImageUnit::_emptyImgUnitDesc = {};
 
     /// @brief 主界面 UI
     class PicPanel : public WndBase<PicPanel>
@@ -32,10 +32,10 @@ namespace CC::UI
         class Pic
         {
         public:
-            Pic(std::filesystem::path path) : unit(path.string()) {}
+            Pic(std::filesystem::path path) : unit(path) {}
             ImVec2 pos = {};
             ImageUnit unit;
-            const ImageUnit::ImageUnitSrcData& desc() const { return unit.desc(); }
+            const ImageUnit::ImageUnitDesc& desc() const { return unit.desc(); }
             const int& w() const { return unit.desc().w; }
             const int& h() const { return unit.desc().h; }
             ImVec2 size() const { return {(float)w(), (float)h()}; }
@@ -76,6 +76,7 @@ namespace CC::UI
             {
                 closeSelf();
                 _imgs.clear();
+                return;
             }
 
             _refreshP0 = true;

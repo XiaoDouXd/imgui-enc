@@ -422,7 +422,7 @@ namespace CC
             if (!event.drop.file || !*event.drop.file) return;
 
             using namespace std::filesystem;
-            auto dir = directory_entry(event.drop.file);
+            auto dir = directory_entry(std::u8string((char8_t*)event.drop.file));
             StaticEventMgr::broadcastAsync<StaticEvent::OnDropFile>(dir);
         }
     }

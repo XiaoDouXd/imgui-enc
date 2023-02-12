@@ -1,12 +1,15 @@
 #pragma once
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <fstream>
+#include <locale>
 
+#include "stb_image.h"
 #include "entrance.h"
 
 namespace CC::UI
 {
+    extern const std::locale loc;
+
     static inline uint32_t findMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties)
     {
         vk::PhysicalDeviceMemoryProperties mem_prop = VulkanMgr::getPhyDev().getMemoryProperties();
@@ -23,7 +26,7 @@ namespace CC::UI
     {
     public:
         /// @brief 图像组件的图像源 不要 free 这的指针!!
-        struct ImageUnitSrcData
+        struct ImageUnitDesc
         {
             uint8_t* data       = nullptr;
             size_t   size       = 0;
@@ -43,23 +46,28 @@ namespace CC::UI
             loadAndReleaseData();
         }
 
-        ImageUnit(std::string filename)
+        ImageUnit(std::filesystem::path filename)
         {
             // --------------------- 加载图像文件到内存
             _channels = 4;
-            _srcData = stbi_load(filename.c_str(), &_w, &_h, 0, _channels);
-            if (!_srcData) throw Exce(__LINE__, __FILE__, "ImgUnit: 读取图像文件错误");
-            _srcDataSize = _w * _h * _channels;
-
-            // --------------------- 提呈到 vk
-            loadAndReleaseData();
-        }
-
-        ImageUnit(const char* filename)
-        {
-            // --------------------- 加载图像文件到内存
-            _channels = 4;
-            _srcData = stbi_load(filename, &_w, &_h, 0, _channels);
+            try
+            {
+                std::locale old_locale = std::locale::global(loc);
+                std::ifstream f(filename, std::ios::binary | std::ios::ate);
+                std::locale::global(old_locale);
+                auto fSize = f.tellg();
+                f.seekg(0, std::ios::beg);
+                fSize = fSize - f.tellg();
+                char* fBuf = new char[fSize];
+                f.read(fBuf, fSize);
+                _srcData = stbi_load_from_memory((uint8_t*)fBuf, fSize, &_w, &_h, 0, _channels);
+                f.close();
+                delete fBuf;
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
             if (!_srcData) throw Exce(__LINE__, __FILE__, "ImgUnit: 读取图像文件错误");
             _srcDataSize = _w * _h * _channels;
 
@@ -92,7 +100,7 @@ namespace CC::UI
             _srcDataSize = 0;
         }
 
-        const ImageUnitSrcData& desc() const
+        const ImageUnitDesc& desc() const
         {
             if (!_srcData) return _emptyImgUnitDesc;
             return *_desc;
@@ -239,7 +247,7 @@ namespace CC::UI
             VulkanMgr::getQueue().submit(end_info);
             VulkanMgr::getDev().waitIdle();
 
-            _desc = std::make_unique<ImageUnitSrcData>();
+            _desc = std::make_unique<ImageUnitDesc>();
             _desc->data = _srcData;
             _desc->size = _srcDataSize;
             _desc->w = _w;
@@ -264,7 +272,7 @@ namespace CC::UI
         size_t _srcDataSize    = 0;
         bool _isReleased    = false;
 
-        std::unique_ptr<ImageUnitSrcData> _desc;
-        static const ImageUnitSrcData _emptyImgUnitDesc;
+        std::unique_ptr<ImageUnitDesc> _desc;
+        static const ImageUnitDesc _emptyImgUnitDesc;
     };
 }

@@ -87,7 +87,6 @@ namespace CC
                 if (data) delete data;
                 if ((*(itr->itr))->_showingWndId == SIZE_MAX)
                 {
-                    (*(itr->itr))->onHide();
                     (*(itr->itr))->_showingWndId = 0;
                     return 0;
                 }

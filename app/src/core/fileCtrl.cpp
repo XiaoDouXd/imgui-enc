@@ -4,11 +4,11 @@ namespace CC
 {
     static const std::array support_path =
     {
-        std::filesystem::path(".png"),
-        std::filesystem::path(".jpg"),
-        std::filesystem::path(".bmp"),
-        std::filesystem::path(".tga"),
-        std::filesystem::path(".psd")
+        std::filesystem::u8path(".png"),
+        std::filesystem::u8path(".jpg"),
+        std::filesystem::u8path(".bmp"),
+        std::filesystem::u8path(".tga"),
+        std::filesystem::u8path(".psd")
     };
 
     static void OnDropFile(std::filesystem::directory_entry dir)
@@ -31,7 +31,7 @@ namespace CC
             }
             App::logInfo("\n");
         }
-        else if (dir.is_regular_file())
+        else
         {
             if (std::find(
                 std::begin(support_path),
