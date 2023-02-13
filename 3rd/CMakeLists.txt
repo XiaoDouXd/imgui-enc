@@ -8,3 +8,4 @@ set(SDL_TEST_ENABLED_BY_DEFAULT OFF)
 
 add_subdirectory(imgui)
 add_subdirectory(SDL3)
+add_subdirectory(glm)

@@ -12,7 +12,7 @@ namespace CC
             _inst = std::make_unique<ClipCtrlData>();
     }
 
-    void ClipCtrl::push(const std::vector<Clip>& clips)
+    void ClipCtrl::push(const std::list<Clip>& clips)
     {
         if (!_inst) return;
         if (clips.empty()) return;
@@ -23,7 +23,7 @@ namespace CC
         _inst->prstInst.todo(Op::PushClip, std::move(data));
     }
 
-    void ClipCtrl::del(const std::vector<size_t>& idx)
+    void ClipCtrl::del(const std::list<size_t>& idx)
     {
         if (!_inst) return;
         if (idx.empty()) return;
@@ -56,28 +56,28 @@ namespace CC
         _inst->prstInst.todo(Op::SwapClip, std::move(data));
     }
 
-    void ClipCtrl::merge(const std::vector<size_t>& idx)
+    void ClipCtrl::merge(const std::list<size_t>& idx)
     {
         if (!_inst) return;
         if (idx.size() <= 1) return;
         ClipDoData data;
         for (auto& i : idx)
         {
-            if (i >= idx.size()) continue;
+            if (i >= _inst->clips.size()) continue;
             data.dObjs.push_back({i, Clip()});
         }
         if (data.dObjs.size() <= 1) return;
         _inst->prstInst.todo(Op::MergeClip, std::move(data));
     }
 
-    void ClipCtrl::erase(const std::vector<size_t>& idx)
+    void ClipCtrl::erase(const std::list<size_t>& idx)
     {
         if (!_inst) return;
         if (idx.empty()) return;
         ClipDoData data;
         for (auto& i : idx)
         {
-            if (i >= idx.size()) continue;
+            if (i >= _inst->clips.size()) continue;
             data.dObjs.push_back({i, Clip()});
         }
         if (data.dObjs.empty()) return;

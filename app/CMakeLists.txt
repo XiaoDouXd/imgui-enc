@@ -31,3 +31,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE util)
 # 链接 rc
 target_include_directories(${PROJECT_NAME} PRIVATE rc/gen/include)
 target_link_libraries(${PROJECT_NAME} PRIVATE rc)
+
+# 链接 glm
+target_include_directories(${PROJECT_NAME} PRIVATE ../3rd/glm/glm)
+target_link_libraries(${PROJECT_NAME} PRIVATE glm)

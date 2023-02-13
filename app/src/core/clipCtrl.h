@@ -4,6 +4,10 @@
 
 #include "entrance.h"
 #include "prstData.hpp"
+#include "ui/util/rectTest.hpp"
+
+#include "glm.hpp"
+#include "imgui_internal.h"
 
 namespace CC
 {
@@ -12,7 +16,9 @@ namespace CC
     {
     public:
         Clip() : empty(true) {}
-        Clip(ImVec2 min, ImVec2 max) : min(min), size(max), empty(false) {}
+        Clip(glm::ivec2 min, glm::ivec2 size) : min(min), size(size) {}
+        Clip(glm::ivec4 rect) : min(rect.x, rect.y), size(glm::abs(rect.z - rect.x), glm::abs(rect.w - rect.y)) {}
+        Clip(ImVec2 min, ImVec2 size) : min(min.x, min.y), size(size.x, size.y), empty(false) {}
         Clip(const Clip& o) : min(o.min), size(o.size), empty(o.empty), mergedRects(o.mergedRects) {}
         Clip(Clip&& o) : min(o.min), size(o.size), empty(o.empty), mergedRects(std::move(o.mergedRects)) {}
 
@@ -41,9 +47,48 @@ namespace CC
             return "复合节点";
         }
 
+        glm::ivec4 getAABB() const
+        {
+            glm::ivec4 o;
+            o.x = min.x; o.y = min.y;
+            o.z = min.x + size.x; o.w = min.y + size.y;
+            for (const auto& c : mergedRects)
+            {
+                const auto& cAABB = c.getAABB();
+                o = glm::min(o, cAABB);
+            }
+            return o;
+        }
+
+        void traverse(std::function<void(const Clip&)> func) const
+        {
+            func(*this);
+            for (const auto& c : mergedRects) c.traverse(func);
+        }
+
+        bool test(glm::ivec2 pos) const
+        {
+            if (pos.x >= min.x && pos.y >= min.y &&
+                pos.x < min.x + size.x && pos.y < min.y + size.y)
+                return true;
+            else for (const auto& i : mergedRects)
+                if (i.test(pos)) return true;
+            return false;
+        }
+
+        bool test(glm::ivec4 rect) const
+        {
+            auto rSize = glm::ivec2(rect.z - rect.x, rect.w - rect.y);
+            if (twoRectTest(min, size, glm::ivec2(glm::min(rect.x, rect.z), glm::min(rect.y, rect.w)), {glm::abs(rSize.x), glm::abs(rSize.y)}))
+                return true;
+            else for (const auto& i : mergedRects)
+                if (i.test(rect)) return true;
+            return false;
+        }
+
         bool empty;
-        ImVec2 min;
-        ImVec2 size;
+        glm::ivec2 min;
+        glm::ivec2 size;
         std::list<Clip> mergedRects;
     };
 
@@ -172,9 +217,9 @@ namespace CC
                         auto itr = ++data.dObjs.cbegin();
                         while(itr != data.dObjs.cend())
                         {
-                            _inst->clips[itr->first].empty = true;
                             _inst->clips[data.dObjs.front().first].mergedRects
                                 .emplace_back(_inst->clips[itr->first]);
+                            _inst->clips[itr->first].empty = true;
                             itr++;
                         }
                     }
@@ -208,11 +253,11 @@ namespace CC
 
     public:
         static void init();
-        static void push(const std::vector<Clip>& clips);
-        static void del(const std::vector<size_t>& idx);
+        static void push(const std::list<Clip>& clips);
+        static void del(const std::list<size_t>& idx);
         static void swap(size_t a, size_t b);
-        static void erase(const std::vector<size_t>& idx);
-        static void merge(const std::vector<size_t>& idx);
+        static void erase(const std::list<size_t>& idx);
+        static void merge(const std::list<size_t>& idx);
         static void set(size_t idx, const Clip& clip);
         static void devid(size_t idx);
         static void undo();

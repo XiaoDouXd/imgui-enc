@@ -7,8 +7,11 @@
 #include "base/wndBase.hpp"
 #include "math.h"
 #include "unit/imgUnit.h"
+#include "ctrlPanel.hpp"
 
 #include "imgui_internal.h"
+
+#include "staticPanelData.h"
 
 namespace CC::UI
 {
@@ -33,12 +36,12 @@ namespace CC::UI
         {
         public:
             Pic(std::filesystem::path path) : unit(path) {}
-            ImVec2 pos = {};
+            glm::ivec2 pos = {};
             ImageUnit unit;
             const ImageUnit::ImageUnitDesc& desc() const { return unit.desc(); }
             const int& w() const { return unit.desc().w; }
             const int& h() const { return unit.desc().h; }
-            ImVec2 size() const { return {(float)w(), (float)h()}; }
+            glm::ivec2 size() const { return {(float)w(), (float)h()}; }
         };
 
         // ------------------- 窗口设置
@@ -48,21 +51,26 @@ namespace CC::UI
 
         // ------------------- 图像绘制相关
         bool _isMouseInVp               = false;
-        ImVec2 _p0                      = {};
-        ImVec2 _focus                   = {};
-        ImVec2 _min                     = {};
-        ImVec2 _max                     = {};
-        ImVec2 _aabbRect                = {};
+        glm::ivec2 _p0                  = {};
+        glm::vec2 _focus                = {};
+        glm::ivec2 _min                 = {};
+        glm::ivec2 _max                 = {};
+        glm::ivec2 _aabbRect            = {};
         float _s                        = 1.f;
         float _alphaRectWid             = 16.0f;
         std::list<Pic> _imgs;
 
+        // ------------------- 选择框
+        glm::ivec4 _selectBox           = {};
+        bool _selectStart               = true;
+
         // ------------------- 背景绘制相关
         ImDrawList* _drawList      = nullptr;
-        ImVec2 _wMax               = {};
-        ImVec2 _wPos               = {};
-        ImVec2 _wSize              = {};
-        ImVec2 _wMousePos          = {};
+        glm::ivec2 _wMax               = {};
+        glm::ivec2 _wPos               = {};
+        glm::ivec2 _wSize              = {};
+        glm::ivec2 _wMousePos          = {};
+        glm::ivec2 _cMousePos          = {};
         std::string _posStr        = {};
 
     protected:
@@ -88,7 +96,7 @@ namespace CC::UI
         void onRefresh() override
         {
             _drawList->AddText({_wPos.x + 4.f, _wMax.y - 26}, IM_COL32_BLACK, _posStr.c_str());
-            ImGui::PushClipRect(_wPos, {_wMax.x, _wMax.y - 26}, true);
+            ImGui::PushClipRect({_wPos.x, _wPos.y}, {_wMax.x, _wMax.y - 26}, true);
             ctrlScale();
             drawAlphaBg();
             drawImg();
@@ -129,6 +137,11 @@ namespace CC::UI
                     _refreshP0 = false;
                 }
 
+                _cMousePos = {
+                    (_wMousePos.x - _p0.x) / _s,
+                    (_wMousePos.y - _p0.y) / _s
+                };
+
                 _posStr = "| (" +
                     std::to_string((int)((_wMousePos.x - _p0.x) / _s)) + ", " +
                     std::to_string((int)((_wMousePos.y - _p0.y) / _s)) + ") |";
@@ -156,28 +169,64 @@ namespace CC::UI
             if (_isMouseInVp && !ImGui::IsWindowDocked()) windowFlags |= ImGuiWindowFlags_NoMove;
             else windowFlags &= !ImGuiWindowFlags_NoMove;
 
-            if (ImGui::IsWindowFocused() && ImguiMgr::getIO().MouseWheel != 0)
+            if (ImGui::IsWindowFocused() && rectTest({ImGui::GetMousePos().x, ImGui::GetMousePos().y}, _wPos, _wMax))
             {
-                auto _sOld = _s;
-                _s += ImguiMgr::getIO().MouseWheel * (_s * 0.16f);
-                if (_s <= 0.05f) _s = 0.05f;
-                if (_s > 36.f) _s = 36.f;
-
-                if (_isMouseInVp)
+                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                    curSelectedClipsReset = true;
+                if (ImguiMgr::getIO().KeyCtrl && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
-                    _p0.x += (_wMousePos.x * _sOld - _wMousePos.x * _s) / 2;
-                    _p0.y += (_wMousePos.y * _sOld - _wMousePos.y * _s) / 2;
+                    for (size_t i = 0; i < ClipCtrl::getCurClips().size(); i++)
+                    {
+                        if (i >= curSelectedClips.size()) break;
+                        if (ClipCtrl::getCurClips()[i].test(_cMousePos))
+                            curSelectedClips[i] = !curSelectedClips[i];
+                    }
+                }
+                if (ImguiMgr::getIO().KeyCtrl && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+                {
+                    if (!_selectStart) {_selectBox.x = _cMousePos.x; _selectBox.y = _cMousePos.y;}
+                    _selectBox.z = _cMousePos.x; _selectBox.w = _cMousePos.y;
+                    _selectStart = true;
                 }
                 else
                 {
-                    _p0.x += (_focus.x * _sOld - _focus.x * _s) / 2;
-                    _p0.y += (_focus.y * _sOld - _focus.y * _s) / 2;
+                    _selectStart = false;
+                }
+
+                if (_selectStart)
+                {
+                    for (size_t i = 0; i < ClipCtrl::getCurClips().size(); i++)
+                    {
+                        if (i >= curSelectedClips.size()) break;
+                        curSelectedClips[i] |= ClipCtrl::getCurClips()[i].test(_selectBox);
+                    }
+                }
+
+                if (ImguiMgr::getIO().MouseWheel != 0)
+                {
+                    auto _sOld = _s;
+                    _s += ImguiMgr::getIO().MouseWheel * (_s * 0.16f);
+                    if (_s <= 0.05f) _s = 0.05f;
+                    if (_s > 36.f) _s = 36.f;
+
+                    if (_isMouseInVp)
+                    {
+                        _p0.x += (_wMousePos.x * _sOld - _wMousePos.x * _s) / 2;
+                        _p0.y += (_wMousePos.y * _sOld - _wMousePos.y * _s) / 2;
+                    }
+                    else
+                    {
+                        _p0.x += (_focus.x * _sOld - _focus.x * _s) / 2;
+                        _p0.y += (_focus.y * _sOld - _focus.y * _s) / 2;
+                    }
                 }
             }
 
             if (_isMouseInVp && ImGui::IsWindowFocused())
             {
-                if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && !ImGui::IsWindowCollapsed())
+                if (!ImguiMgr::getIO().KeyCtrl &&
+                    ImGui::IsMouseDragging(ImGuiMouseButton_Left) &&
+                    !ImGui::IsWindowCollapsed())
                 {
                     auto dragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
                     _p0.x += ImguiMgr::getIO().MouseDelta.x;
@@ -195,13 +244,11 @@ namespace CC::UI
         {
             switch (k)
             {
-            case Shortcut::Undo:
-                App::logInfo("CC::PicPanel info: 撤回撤回!!\n");
-                ClipCtrl::undo();
+            case Shortcut::Undo: ClipCtrl::undo();
+                curSelectedClipsReset = true;
                 return;
-            case Shortcut::Redo:
-                App::logInfo("CC::PicPanel info: 重做重做!!\n");
-                ClipCtrl::redo();
+            case Shortcut::Redo: ClipCtrl::redo();
+                curSelectedClipsReset = true;
                 return;
             default: return;
             }
@@ -220,8 +267,11 @@ namespace CC::UI
 
         void drawClips()
         {
-            for (auto& i : ClipCtrl::getCurClips())
-                addRect(i.min, i.size, ImColor(1.f, 0.f, 0.f));
+            const auto& clips = ClipCtrl::getCurClips();
+            for (auto i = size_t(0); i < clips.size(); i++)
+                addClip(i);
+            if (_selectStart)
+                addRect({_selectBox.x, _selectBox.y}, {_selectBox.z - _selectBox.x, _selectBox.w - _selectBox.y}, IM_COL32_BLACK);
         }
 
         void drawAlphaBg()
@@ -245,14 +295,37 @@ namespace CC::UI
             }
         }
 
-        void addImg(ImTextureID imgId, ImVec2 pos, ImVec2 size)
+        // ---------------------------------------------------------------- 绘制 unit
+        void addImg(ImTextureID imgId, glm::ivec2 pos, glm::ivec2 size)
         {
             _drawList->AddImage(imgId,
                 {_wPos.x + _p0.x + scale(pos.x), _wPos.y + _p0.y + scale(pos.y)},
                 {_wPos.x + _p0.x + scale(size.x + pos.x), _wPos.y + _p0.y + scale(size.y + pos.y)});
         }
 
-        void addRect(ImVec2 pos, ImVec2 size, ImColor col)
+        void addClip(size_t idx)
+        {
+            const auto& clip = ClipCtrl::getCurClips()[idx];
+            if (clip.empty) return;
+            if (idx == curHoveredClip)
+                clip.traverse([this](const Clip& clip){
+                    this->addRectFilled(clip.min, clip.size, ImColor(0.f, 0.f, 1.f, 0.2f));
+                });
+            if (idx == curDragedClip)
+                clip.traverse([this](const Clip& clip){
+                    this->addRectFilled(clip.min, clip.size, ImColor(1.f, 0.f, 0.f, 0.2f));
+                });
+            if (idx < curSelectedClips.size() && curSelectedClips[idx])
+                clip.traverse([this](const Clip& clip){
+                    this->addRect(clip.min, clip.size, ImColor(1.f, 0.f, 0.f, 1.f));
+                });
+            else
+                clip.traverse([this](const Clip& clip){
+                    this->addRect(clip.min, clip.size, ImColor(0.f, 0.f, 1.f, 1.f));
+                });
+        }
+
+        void addRect(glm::ivec2 pos, glm::ivec2 size, ImColor col)
         {
             _drawList->AddRect(
                 {_wPos.x + _p0.x + scale(pos.x), _wPos.y + _p0.y + scale(pos.y)},
@@ -260,15 +333,15 @@ namespace CC::UI
                 col);
         }
 
-        void addRectFilled(ImVec2 pos, ImVec2 size, ImColor col)
+        void addRectFilled(glm::ivec2 pos, glm::ivec2 size, ImColor col)
         {
             _drawList->AddRectFilled(
-                {_wPos.x + _p0.x + pos.x, _wPos.y + _p0.y + pos.y},
-                {_wPos.x + size.x + _p0.x + pos.x, _wPos.y + size.y + _p0.y + pos.y},
+                {_wPos.x + _p0.x + scale(pos.x), _wPos.y + _p0.y + scale(pos.y)},
+                {_wPos.x + _p0.x + scale(size.x + pos.x), _wPos.y + _p0.y + scale(size.y + pos.y)},
                 col);
         }
 
-        void addAlphaRect(ImVec2 pos, float size)
+        void addAlphaRect(glm::ivec2 pos, float size)
         {
             _drawList->AddRectFilled(
                 {_wPos.x + pos.x, _wPos.y + pos.y},
@@ -288,9 +361,9 @@ namespace CC::UI
 
         void refreshData()
         {
-            ImVec2 f = {};
-            ImVec2 mi = {_imgs.front().pos.x, _imgs.front().pos.y};
-            ImVec2 ma = {_imgs.front().pos.x, _imgs.front().pos.y};
+            glm::vec2 f = {};
+            glm::ivec2 mi = {_imgs.front().pos.x, _imgs.front().pos.y};
+            glm::ivec2 ma = {_imgs.front().pos.x, _imgs.front().pos.y};
             for (const auto& i : _imgs)
             {
                 mi.x = std::min({i.pos.x, mi.x});

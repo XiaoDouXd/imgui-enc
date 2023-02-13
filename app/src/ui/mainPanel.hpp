@@ -10,6 +10,8 @@
 #include "ctrlPanel.hpp"
 #include "picPanel.hpp"
 
+#include "staticPanelData.h"
+
 namespace CC::UI
 {
     static size_t picPanelId = 0;

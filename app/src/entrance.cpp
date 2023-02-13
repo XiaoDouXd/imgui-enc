@@ -5,6 +5,8 @@
 #include "ui/mainPanel.hpp"
 #include "ui/picPanel.hpp"
 
+#include "ui/staticPanelData.h"
+
 namespace CC
 {
     /// @brief 主循环启动器
@@ -39,6 +41,12 @@ namespace CC
 
     UI::MainPanel_cover* UI::MainPanel_cover::_this = nullptr;
     static std::unique_ptr<MainUnit> mainUnit = nullptr;
+
+    ssize_t UI::curHoveredClip = -1;
+    ssize_t UI::curDragedClip = -1;
+    std::vector<uint8_t> UI::curSelectedClips = {};
+    std::vector<glm::vec4> UI::clipChanges;
+    bool UI::curSelectedClipsReset = true;
 }
 
 void init(int argc, char* argv[])

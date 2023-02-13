@@ -2,6 +2,7 @@
 #include "app.h"
 #include "entrance.h"
 
+#include "ui/unit/imgUnit.h"
 #include "shortcut.h"
 
 namespace CC
@@ -422,7 +423,9 @@ namespace CC
             if (!event.drop.file || !*event.drop.file) return;
 
             using namespace std::filesystem;
+            auto oldLoc = std::locale::global(UI::loc);
             auto dir = directory_entry(std::u8string((char8_t*)event.drop.file));
+            std::locale::global(oldLoc);
             StaticEventMgr::broadcastAsync<StaticEvent::OnDropFile>(dir);
         }
     }

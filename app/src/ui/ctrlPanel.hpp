@@ -9,6 +9,8 @@
 #include "entrance.h"
 #include "util/rectTest.hpp"
 
+#include "staticPanelData.h"
+
 namespace CC::UI
 {
     const char* gSizeLabel = "- 网格宽高";
@@ -17,7 +19,10 @@ namespace CC::UI
     const char* createGrid = "建立网格";
     const char* createGridOK = "确定";
     const ImGuiWindowFlags popFlag =    ImGuiWindowFlags_NoCollapse |
-                                        ImGuiWindowFlags_NoDocking;
+                                        ImGuiWindowFlags_NoDocking |
+                                        ImGuiWindowFlags_AlwaysAutoResize |
+                                        ImGuiWindowFlags_NoScrollbar |
+                                        ImGuiWindowFlags_NoResize;
 
     class CtrlPanel : public WndBase<CtrlPanel>
     {
@@ -27,13 +32,6 @@ namespace CC::UI
         ImGuiWindowFlags windowFlags    = 0;
         ImVec4 clearColor               = ImVec4(0.22f, 0.22f, 0.22f, 1.00f);
 
-        int rectOffset[2]               = {0, 0};
-        int rectWidth[2]                = {32, 32};
-        int rectCount[2]                = {2, 2};
-
-        // ------------------- 网格窗口
-        bool createGridPopShow              = false;
-
     protected:
         void onShow(WndDataBaseHolder*) override
         {
@@ -42,14 +40,24 @@ namespace CC::UI
 
         void onRefresh() override
         {
+            const auto& clips = ClipCtrl::getCurClips();
+            if (curSelectedClips.size() != clips.size())
+                curSelectedClipsReset = true;
+            if (curSelectedClipsReset)
+            {
+                curSelectedClips.resize(clips.size());
+                for (auto& i : curSelectedClips) i = false;
+                curSelectedClipsReset = false;
+            }
+
             if (ImGui::BeginTabItem("生成"))
             {
                 // static float f = 0.0f;
                 // ImGui::Text("行文本.");                                 // Display some text (you can use a format strings too)
-                // ImGui::InputInt2(gSizeLabel, rectWidth);
+                // ImGui::InputInt2(gSizeLabel, _gridPop_rectWidth);
 
                 if (ImGui::Button(createGrid))
-                    createGridPopShow = true;
+                    _gridPop_createGridPopShow = true;
 
                 // ImGui::SliderFloat("浮点数", &f, 0.0f, 1.0f);           // Edit 1 float using a slider from 0.0f to 1.0f
                 // ImGui::ColorEdit3("背景色", (float*)&clearColor);       // Edit 3 floats representing a color
@@ -58,16 +66,17 @@ namespace CC::UI
                 ImGui::Text("程序刷新率 %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
                 ImGui::EndTabItem();
             }
-            ClipList();
+            clipList();
             ImGui::EndTabBar();
 
             // ------------------------- 一些弹窗
             createGridPop();
+            delEmptyPop();
         }
 
         bool onWndBegin() override
         {
-            if (ImGui::Begin("控制台", nullptr, windowFlags))
+            if (ImGui::Begin("切片", nullptr, windowFlags))
             {
                 ImGui::BeginTabBar("MyTabBar", ImGuiTabBarFlags_None);
                 return true;
@@ -80,32 +89,36 @@ namespace CC::UI
             ImGui::End();
         }
     private:
+        // ------------------- 网格窗口
+        int _gridPop_rectOffset[2]               = {0, 0};
+        int _gridPop_rectWidth[2]                = {32, 32};
+        int _gridPop_rectCount[2]                = {2, 2};
+        bool _gridPop_createGridPopShow              = false;
         void createGridPop()
         {
-            if (!createGridPopShow) return;
-            ImGui::Begin("创建网格切片", &createGridPopShow, popFlag);
+            if (!_gridPop_createGridPopShow) return;
+            ImGui::Begin("创建网格切片", &_gridPop_createGridPopShow, popFlag);
 
-            ImGui::InputInt2(gSizeLabel, rectWidth);
-            ImGui::InputInt2(gOffsetLabel, rectOffset);
-            ImGui::InputInt2(gCountLabel, rectCount);
+            ImGui::InputInt2(gSizeLabel, _gridPop_rectWidth, ImGuiInputTextFlags_CharsDecimal);
+            ImGui::InputInt2(gOffsetLabel, _gridPop_rectOffset);
+            ImGui::InputInt2(gCountLabel, _gridPop_rectCount);
             if (ImGui::Button(createGridOK))
             {
-                if (rectCount[0]  <= 0 || rectCount[1] <= 0)
+                if (_gridPop_rectCount[0]  <= 0 || _gridPop_rectCount[1] <= 0)
                 {
-                    rectCount[0] = 0;
-                    rectCount[1] = 0;
+                    _gridPop_rectCount[0] = 0;
+                    _gridPop_rectCount[1] = 0;
                 }
-                createGridPopShow = false;
-                auto rects = std::vector<Clip>(rectCount[0] * rectCount[1]);
+                _gridPop_createGridPopShow = false;
+                auto rects = std::list<Clip>();
                 auto curIdx = 0;
-                for (auto i = 0; i < rectCount[0]; i++)
+                for (auto i = 0; i < _gridPop_rectCount[0]; i++)
                 {
-                    for (auto j = 0; j < rectCount[1]; j++)
+                    for (auto j = 0; j < _gridPop_rectCount[1]; j++)
                     {
-                        rects[curIdx] = Clip(
-                            {(float)(i * rectWidth[0] + rectOffset[0]), (float)(j * rectWidth[1] + rectOffset[1])},
-                            {(float)rectWidth[0], (float)rectWidth[1]});
-                        curIdx++;
+                        rects.emplace_back(Clip(
+                            glm::ivec2((float)(i * _gridPop_rectWidth[0] + _gridPop_rectOffset[0]), (float)(j * _gridPop_rectWidth[1] + _gridPop_rectOffset[1])),
+                            glm::ivec2((float)_gridPop_rectWidth[0], (float)_gridPop_rectWidth[1])));
                     }
                 }
                 ClipCtrl::push(rects);
@@ -120,39 +133,45 @@ namespace CC::UI
         bool _clipList_enableListOperation              = false;
         int _clipList_dragStart                         = 0;
         int _clipList_selectItem_gridList               = 0;
-        void ClipList()
+        std::string _clipList_clipName;
+        void clipList()
         {
-            if (ImGui::BeginTabItem("切片列表"))
+            auto h = ImGui::GetWindowHeight();
+            if (ImGui::BeginTabItem("遴选"))
             {
-                ImGui::BeginListBox("切片", ImVec2(-FLT_MIN, -FLT_MIN));
-                auto i = size_t(0);
-                std::string name;
-                ImGuiStyle& style = ImGui::GetStyle();
-
-                ImVec2 windowPosition = ImGui::GetWindowPos();
-                ImVec2 cursorPosition = ImGui::GetCursorPos();
-
-                ImVec2 itemPosition (
-                    windowPosition.x + cursorPosition.x,
-                    windowPosition.y + cursorPosition.y - style.ItemSpacing.y
-                );
-
                 const auto& clips = ClipCtrl::getCurClips();
+                ImGui::BeginListBox("切片", ImVec2(-FLT_MIN, h - 120));
+                auto i = size_t(0);
+
+                curHoveredClip = -1;
                 for (int i = 0; i < clips.size(); i++)
                 {
-                    name = "[" + std::to_string(i) + "] " + (std::string)clips[i];
-                    ImGui::Selectable(name.c_str());
-                    if (ImGui::IsWindowFocused() && _clipList_enableListOperation &&
-                        rectTest(ImGui::GetMousePos(), ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+                    _clipList_clipName = "[" + std::to_string(i) + "] " + (std::string)clips[i];
+                    if (ImGui::Selectable(_clipList_clipName.c_str(), curSelectedClips[i]))
                     {
-                        _clipList_selectItem_gridList = i;
-                        if (_clipList_startDragAndListOperationEnabled)
+                        curSelectedClips[i] = !curSelectedClips[i];
+                    }
+                    if (rectTest(ImGui::GetMousePos(), ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+                    {
+                        curHoveredClip = i;
+                        if (ImGui::IsWindowFocused() && _clipList_enableListOperation)
                         {
-                            ImGui::GetWindowDrawList()->AddRectFilled(
-                                ImGui::GetItemRectMin(),
-                                ImGui::GetItemRectMax(),
-                                ImColor(1.f, 0.2f, 0.f, 0.25f));
+                            _clipList_selectItem_gridList = i;
+                            if (_clipList_startDragAndListOperationEnabled)
+                            {
+                                ImGui::GetWindowDrawList()->AddRectFilled(
+                                    ImGui::GetItemRectMin(),
+                                    ImGui::GetItemRectMax(),
+                                    ImColor(1.f, 0.2f, 0.f, 0.25f));
+                            }
                         }
+                    }
+                    if (_clipList_startDragAndListOperationEnabled && i == _clipList_dragStart)
+                    {
+                        ImGui::GetWindowDrawList()->AddRectFilled(
+                            ImGui::GetItemRectMin(),
+                            ImGui::GetItemRectMax(),
+                            ImColor(0.f, 0.2f, 1.f, 0.25f));
                     }
 
                     if (ImGui::IsWindowFocused())
@@ -163,8 +182,11 @@ namespace CC::UI
                             {
                                 _clipList_startDragAndListOperationEnabled = _clipList_enableListOperation;
                                 _clipList_startDrag = true;
+                                if (_clipList_startDragAndListOperationEnabled)
+                                    for (auto& i : curSelectedClips) i = false;
                                 if (_clipList_selectItem_gridList >= 0 && _clipList_selectItem_gridList < clips.size())
                                     _clipList_dragStart = _clipList_selectItem_gridList;
+                                curDragedClip = _clipList_dragStart;
                             }
                         }
                         else if (_clipList_startDrag)
@@ -175,8 +197,10 @@ namespace CC::UI
                                 if (n_next != _clipList_dragStart && n_next >= 0 && n_next < clips.size())
                                     ClipCtrl::swap(_clipList_dragStart, n_next);
                             }
+                            curSelectedClipsReset = _clipList_startDragAndListOperationEnabled;
                             _clipList_startDrag = false;
                             _clipList_startDragAndListOperationEnabled = false;
+                            curDragedClip = -1;
                         }
                     }
                     ImGui::Separator();
@@ -184,16 +208,100 @@ namespace CC::UI
                 ImGui::EndListBox();
                 if (rectTest(ImGui::GetMousePos(),
                     ImGui::GetItemRectMin(),
-                    {ImGui::GetItemRectMax().x - 50, ImGui::GetItemRectMax().y}))
+                    {ImGui::GetItemRectMax().x - 65, ImGui::GetItemRectMax().y}))
                     _clipList_enableListOperation = true;
                 else
                 {
+                    _clipList_startDrag = false;
+                    _clipList_startDragAndListOperationEnabled = false;
                     _clipList_enableListOperation = false;
                     _clipList_dragStart           = 0;
                     _clipList_selectItem_gridList = 0;
+                    curDragedClip = -1;
+                }
+                if (ImGui::Button("合"))
+                {
+                    auto cs = std::list<size_t>();
+                    for (auto i = size_t(0); i < curSelectedClips.size(); i++)
+                        if (curSelectedClips[i])
+                            cs.push_back(i);
+                    ClipCtrl::merge(cs);
+                    curSelectedClipsReset = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("分"))
+                {
+                    for (auto i = size_t(0); i < curSelectedClips.size(); i++)
+                        if (curSelectedClips[i])
+                            ClipCtrl::devid(i);
+                    curSelectedClipsReset = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("清"))
+                {
+                    auto cs = std::list<size_t>();
+                    for (auto i = size_t(0); i < curSelectedClips.size(); i++)
+                        if (curSelectedClips[i])
+                            cs.push_back(i);
+                    ClipCtrl::erase(cs);
+                    curSelectedClipsReset = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("删"))
+                {
+                    auto cs = std::list<size_t>();
+                    for (auto i = size_t(0); i < curSelectedClips.size(); i++)
+                        if (curSelectedClips[i])
+                            cs.push_back(i);
+                    ClipCtrl::del(cs);
+                    curSelectedClipsReset = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("删除空位"))
+                {
+                    _delEmptyPop_show = true;
                 }
                 ImGui::EndTabItem();
             }
         }
+
+        // -------------------------------------------- 询问弹窗
+        bool _delEmptyPop_show                          = false;
+        void delEmptyPop()
+        {
+            if (!_delEmptyPop_show) return;
+            if (ImGui::Begin("删除空位", &_delEmptyPop_show, popFlag))
+            {
+                ImGui::Text("注意: 删除空位会导致编号大量改变!");
+                ImGui::Text("确定执行?");
+                if (ImGui::Button("确定"))
+                {
+                    auto cs = std::list<size_t>();
+                    for (auto i = size_t(0); i < ClipCtrl::getCurClips().size(); i++)
+                        if (ClipCtrl::getCurClips()[i].empty)
+                            cs.push_back(i);
+                    ClipCtrl::del(cs);
+                    curSelectedClipsReset = true;
+                    _delEmptyPop_show = false;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("取消"))
+                    _delEmptyPop_show = false;
+            }
+            ImGui::End();
+        }
+
+        // -------------------------------------------- 切片修改
+        void clipChangePanel()
+        {
+            // if (ImGui::BeginTabItem("调整"))
+            // {
+            //     for (const auto& c : clipChanges)
+            //     {
+            //         if (c.first < cur curSelectedClips[c.first])
+            //     }
+            // }
+        }
     };
+
 }

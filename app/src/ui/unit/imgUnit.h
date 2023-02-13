@@ -60,7 +60,7 @@ namespace CC::UI
                 fSize = fSize - f.tellg();
                 char* fBuf = new char[fSize];
                 f.read(fBuf, fSize);
-                _srcData = stbi_load_from_memory((uint8_t*)fBuf, fSize, &_w, &_h, 0, _channels);
+                _srcData = stbi_load_from_memory((stbi_uc*)fBuf, fSize, &_w, &_h, 0, _channels);
                 f.close();
                 delete fBuf;
             }
