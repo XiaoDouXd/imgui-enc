@@ -16,8 +16,8 @@ namespace CC
     {
     public:
         Clip() : empty(true) {}
-        Clip(glm::ivec2 min, glm::ivec2 size) : min(min), size(size) {}
-        Clip(glm::ivec4 rect) : min(rect.x, rect.y), size(glm::abs(rect.z - rect.x), glm::abs(rect.w - rect.y)) {}
+        Clip(glm::ivec2 min, glm::ivec2 size) : min(min), size(size), empty(false) {}
+        Clip(glm::ivec4 rect) : min(rect.x, rect.y), size(glm::abs(rect.z - rect.x), glm::abs(rect.w - rect.y)), empty(false) {}
         Clip(ImVec2 min, ImVec2 size) : min(min.x, min.y), size(size.x, size.y), empty(false) {}
         Clip(const Clip& o) : min(o.min), size(o.size), empty(o.empty), mergedRects(o.mergedRects) {}
         Clip(Clip&& o) : min(o.min), size(o.size), empty(o.empty), mergedRects(std::move(o.mergedRects)) {}

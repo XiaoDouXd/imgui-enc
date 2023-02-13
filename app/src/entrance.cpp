@@ -32,7 +32,7 @@ namespace CC
             using namespace CC::UI;
             if (ImguiMgr::notLoadingFinished()) return;
             static bool show_demo_window = true;
-            ImGui::ShowDemoWindow(&show_demo_window);
+            // ImGui::ShowDemoWindow(&show_demo_window);
 
             if (ImguiMgr::getIO().KeysDown[ImGuiKey_Escape])
                 App::quit();

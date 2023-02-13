@@ -95,8 +95,8 @@ namespace CC::UI
 
         void onRefresh() override
         {
-            _drawList->AddText({_wPos.x + 4.f, _wMax.y - 26}, IM_COL32_BLACK, _posStr.c_str());
-            ImGui::PushClipRect({_wPos.x, _wPos.y}, {_wMax.x, _wMax.y - 26}, true);
+            _drawList->AddText({_wPos.x + 4.f, (float)_wMax.y - 26}, IM_COL32_BLACK, _posStr.c_str());
+            ImGui::PushClipRect({(float)_wPos.x, (float)_wPos.y}, {(float)_wMax.x, (float)_wMax.y - 26}, true);
             ctrlScale();
             drawAlphaBg();
             drawImg();
@@ -344,12 +344,12 @@ namespace CC::UI
         void addAlphaRect(glm::ivec2 pos, float size)
         {
             _drawList->AddRectFilled(
-                {_wPos.x + pos.x, _wPos.y + pos.y},
+                {(float)_wPos.x + pos.x, (float)_wPos.y + pos.y},
                 {_wPos.x + size + pos.x, _wPos.y + size + pos.y},
                 ImColor(0.f, 0.f, 0.f, 0.25f));
             _drawList->AddRectFilled(
                 {_wPos.x + pos.x - size, _wPos.y + pos.y - size},
-                {_wPos.x  + pos.x, _wPos.y + pos.y},
+                {(float)_wPos.x  + pos.x, (float)_wPos.y + pos.y},
                 ImColor(0.f, 0.f, 0.f, 0.25f));
         }
 
