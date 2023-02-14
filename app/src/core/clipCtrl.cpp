@@ -63,7 +63,7 @@ namespace CC
         ClipDoData data;
         for (auto& i : idx)
         {
-            if (i >= _inst->clips.size()) continue;
+            if (i >= _inst->clips.size() || _inst->clips[i].empty) continue;
             data.dObjs.push_back({i, Clip()});
         }
         if (data.dObjs.size() <= 1) return;
@@ -77,7 +77,7 @@ namespace CC
         ClipDoData data;
         for (auto& i : idx)
         {
-            if (i >= _inst->clips.size()) continue;
+            if (i >= _inst->clips.size() || _inst->clips[i].empty) continue;
             data.dObjs.push_back({i, Clip()});
         }
         if (data.dObjs.empty()) return;
@@ -97,7 +97,7 @@ namespace CC
     void ClipCtrl::devid(size_t idx)
     {
         if (!_inst) return;
-        if (idx >= _inst->clips.size()) return;
+        if (idx >= _inst->clips.size() || _inst->clips[idx].empty) return;
         ClipDoData data;
         data.dObjs.push_back({idx, Clip()});
         auto childCount = _inst->clips[idx].mergedRects.size();

@@ -4,6 +4,7 @@
 
 #include "core/clipCtrl.h"
 #include "core/fileCtrl.h"
+#include "core/imgCtrl.h"
 #include "base/wndBase.hpp"
 #include "math.h"
 #include "unit/imgUnit.h"
@@ -20,32 +21,8 @@ namespace CC::UI
     /// @brief 主界面 UI
     class PicPanel : public WndBase<PicPanel>
     {
-    public:
-        void pushPic(std::filesystem::path path)
-        {
-            try
-            {
-                _imgs.emplace_back(path);
-            }
-            catch(const std::exception& e) { }
-            refreshData();
-        }
-
     private:
-        class Pic
-        {
-        public:
-            Pic(std::filesystem::path path) : unit(path) {}
-            glm::ivec2 pos = {};
-            ImageUnit unit;
-            const ImageUnit::ImageUnitDesc& desc() const { return unit.desc(); }
-            const int& w() const { return unit.desc().w; }
-            const int& h() const { return unit.desc().h; }
-            glm::ivec2 size() const { return {(float)w(), (float)h()}; }
-        };
-
         // ------------------- 窗口设置
-
         ImGuiWindowFlags windowFlags    = 0;
         bool _refreshP0                 = true;
 
@@ -58,9 +35,9 @@ namespace CC::UI
         glm::ivec2 _aabbRect            = {};
         float _s                        = 1.f;
         float _alphaRectWid             = 16.0f;
-        std::list<Pic> _imgs;
 
         // ------------------- 选择框
+        std::vector<uint8_t> _selectedCache = {};
         glm::ivec4 _selectBox           = {};
         bool _selectStart               = true;
 
@@ -76,14 +53,9 @@ namespace CC::UI
     protected:
         void onShow(WndDataBaseHolder*) override
         {
-            try
-            {
-                _imgs.emplace_back(FileCtrl::getInst().fileQueue.front());
-            }
-            catch(const std::exception& e)
+            if (ImgCtrl::empty())
             {
                 closeSelf();
-                _imgs.clear();
                 return;
             }
 
@@ -130,8 +102,8 @@ namespace CC::UI
                 if (_refreshP0)
                 {
                     _p0 = {
-                        _wSize.x * 0.5f - scale(_imgs.front().desc().w) * 0.5f,
-                        _wSize.y * 0.5f - scale(_imgs.front().desc().h) * 0.5f
+                        _wSize.x * 0.5f - scale(ImgCtrl::getAABB().z) * 0.5f,
+                        _wSize.y * 0.5f - scale(ImgCtrl::getAABB().w) * 0.5f
                     };
                     _s = 1.f;
                     _refreshP0 = false;
@@ -147,6 +119,13 @@ namespace CC::UI
                     std::to_string((int)((_wMousePos.y - _p0.y) / _s)) + ") |";
 
                 _drawList = ImGui::GetWindowDrawList();
+
+                if (_selectedCache.size() != curSelectedClips.size())
+                {
+                    _selectedCache.resize(curSelectedClips.size());
+                    for (auto& i : _selectedCache) i = false;
+                }
+
                 return true;
             }
             return false;
@@ -172,13 +151,16 @@ namespace CC::UI
             if (ImGui::IsWindowFocused() && rectTest({ImGui::GetMousePos().x, ImGui::GetMousePos().y}, _wPos, _wMax))
             {
                 if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                {
+                    for (auto& i : _selectedCache) i = false;
                     curSelectedClipsReset = true;
+                }
                 if (ImguiMgr::getIO().KeyCtrl && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
                     for (size_t i = 0; i < ClipCtrl::getCurClips().size(); i++)
                     {
                         if (i >= curSelectedClips.size()) break;
-                        if (ClipCtrl::getCurClips()[i].test(_cMousePos))
+                        if (!ClipCtrl::getCurClips()[i].empty && ClipCtrl::getCurClips()[i].test(_cMousePos))
                             curSelectedClips[i] = !curSelectedClips[i];
                     }
                 }
@@ -188,8 +170,11 @@ namespace CC::UI
                     _selectBox.z = _cMousePos.x; _selectBox.w = _cMousePos.y;
                     _selectStart = true;
                 }
-                else
+                else if (_selectStart)
                 {
+                    for (size_t i = 0; i < _selectedCache.size(); i++)
+                        if (i < curSelectedClips.size() && !ClipCtrl::getCurClips()[i].empty)
+                            curSelectedClips[i] |= _selectedCache[i];
                     _selectStart = false;
                 }
 
@@ -197,8 +182,8 @@ namespace CC::UI
                 {
                     for (size_t i = 0; i < ClipCtrl::getCurClips().size(); i++)
                     {
-                        if (i >= curSelectedClips.size()) break;
-                        curSelectedClips[i] |= ClipCtrl::getCurClips()[i].test(_selectBox);
+                        if (i >= _selectedCache.size()) break;
+                        _selectedCache[i] = ClipCtrl::getCurClips()[i].test(_selectBox);
                     }
                 }
 
@@ -258,11 +243,9 @@ namespace CC::UI
         /// @brief 绘制 image
         void drawImg()
         {
-            for (const auto&i : _imgs)
-            {
-                addImg(i.unit.getId(), i.pos, i.size());
-                addRect(i.pos, i.size(), IM_COL32_BLACK);
-            }
+            ImgCtrl::draw([this](ImTextureID id, glm::ivec2 pos, glm::ivec2 size){
+                this->addPic(id, pos, size);
+            });
         }
 
         void drawClips()
@@ -296,6 +279,12 @@ namespace CC::UI
         }
 
         // ---------------------------------------------------------------- 绘制 unit
+        void addPic(ImTextureID imgId, glm::ivec2 pos, glm::ivec2 size)
+        {
+            addImg(imgId, pos, size);
+            addRect(pos, size, IM_COL32_BLACK);
+        }
+
         void addImg(ImTextureID imgId, glm::ivec2 pos, glm::ivec2 size)
         {
             _drawList->AddImage(imgId,
@@ -315,7 +304,8 @@ namespace CC::UI
                 clip.traverse([this](const Clip& clip){
                     this->addRectFilled(clip.min, clip.size, ImColor(1.f, 0.f, 0.f, 0.2f));
                 });
-            if (idx < curSelectedClips.size() && curSelectedClips[idx])
+            if ((idx < curSelectedClips.size() && curSelectedClips[idx]) ||
+                (idx < _selectedCache.size() && _selectedCache[idx]))
                 clip.traverse([this](const Clip& clip){
                     this->addRect(clip.min, clip.size, ImColor(1.f, 0.f, 0.f, 1.f));
                 });
@@ -361,26 +351,11 @@ namespace CC::UI
 
         void refreshData()
         {
-            glm::vec2 f = {};
-            glm::ivec2 mi = {_imgs.front().pos.x, _imgs.front().pos.y};
-            glm::ivec2 ma = {_imgs.front().pos.x, _imgs.front().pos.y};
-            for (const auto& i : _imgs)
-            {
-                mi.x = std::min({i.pos.x, mi.x});
-                mi.y = std::min({i.pos.y, mi.y});
-
-                ma.x = std::max({i.pos.x + i.desc().w, ma.x});
-                ma.y = std::max({i.pos.y + i.desc().h, ma.y});
-
-                f.x += i.desc().w;
-                f.y += i.desc().h;
-            }
-            f.x /= _imgs.size();
-            f.y /= _imgs.size();
-            _focus = f;
+            glm::ivec2 mi = {ImgCtrl::getAABB().x, ImgCtrl::getAABB().y};
+            glm::ivec2 ma = {ImgCtrl::getAABB().x + ImgCtrl::getAABB().z, ImgCtrl::getAABB().y + ImgCtrl::getAABB().w};
+            _focus = ImgCtrl::getForce();
             _min = mi;
             _max = ma;
-
             _aabbRect.x = _max.x - _min.x;
             _aabbRect.y = _max.y - _min.y;
         }

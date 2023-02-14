@@ -6,6 +6,7 @@
 
 #include "base/wndBase.hpp"
 #include "core/clipCtrl.h"
+#include "core/imgCtrl.h"
 #include "entrance.h"
 #include "util/rectTest.hpp"
 
@@ -146,7 +147,7 @@ namespace CC::UI
                 curHoveredClip = -1;
                 for (int i = 0; i < clips.size(); i++)
                 {
-                    _clipList_clipName = "[" + std::to_string(i) + "] " + (std::string)clips[i];
+                    _clipList_clipName = "        [" + std::to_string(i) + "] " + (std::string)clips[i];
                     if (ImGui::Selectable(_clipList_clipName.c_str(), curSelectedClips[i]))
                     {
                         curSelectedClips[i] = !curSelectedClips[i];
@@ -166,6 +167,7 @@ namespace CC::UI
                             }
                         }
                     }
+                    drawPicIcon(clips[i]);
                     if (_clipList_startDragAndListOperationEnabled && i == _clipList_dragStart)
                     {
                         ImGui::GetWindowDrawList()->AddRectFilled(
@@ -263,6 +265,28 @@ namespace CC::UI
                 }
                 ImGui::EndTabItem();
             }
+        }
+
+        // -------------------------------------------- 缩略图
+        void drawPicIcon(const Clip& clip)
+        {
+            auto dl = ImGui::GetWindowDrawList();
+            auto minP = ImGui::GetItemRectMin();
+            auto aabb = clip.getAABB();
+            aabb.z = aabb.z - aabb.x;
+            aabb.w = aabb.w - aabb.y;
+            float sc = glm::max(aabb.z, aabb.w);
+            if (sc <= 0.00000000001f) return;
+
+            ImgCtrl::draw(clip, [this, dl, minP, aabb, sc]
+                (ImTextureID id, glm::ivec2 p, glm::ivec2 s, glm::vec2 uvMin, glm::vec2 uvMax)
+            {
+                ImVec2 p0 = {minP.x + (p.x / sc) * 26 + 4, minP.y + (p.y / sc) * 26 + 4};
+                dl->AddImage(id, p0, {p0.x + (s.x / sc) * 26, p0.y + (s.y / sc) * 26},
+                    {uvMin.x, uvMin.y}, {uvMax.x, uvMax.y});
+            });
+            dl->AddRect({minP.x + 4, minP.y + 4}, {minP.x + 30, minP.y + 30},
+                IM_COL32_BLACK);
         }
 
         // -------------------------------------------- 询问弹窗

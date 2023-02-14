@@ -36,6 +36,10 @@ namespace CC::UI
         };
 
     public:
+        ImageUnit() = delete;
+        ImageUnit(const ImageUnit&) = delete;
+        const ImageUnit& operator=(const ImageUnit&) = delete;
+
         ImageUnit(uint8_t* buf, size_t size, int w, int h, int channels) :
         _w(w), _h(h), _channels(channels)
         {

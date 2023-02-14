@@ -49,20 +49,26 @@ namespace CC
 
         glm::ivec4 getAABB() const
         {
-            glm::ivec4 o;
-            o.x = min.x; o.y = min.y;
-            o.z = min.x + size.x; o.w = min.y + size.y;
+            glm::ivec2 oMin, oMax;
+            oMin = min;
+            oMax = min + size;
             for (const auto& c : mergedRects)
             {
                 const auto& cAABB = c.getAABB();
-                o = glm::min(o, cAABB);
+                oMin = glm::min(oMin, glm::ivec2(cAABB.x, cAABB.y));
+                oMax = glm::max(oMax, glm::ivec2(cAABB.z, cAABB.w));
             }
-            return o;
+            return {oMin.x, oMin.y, oMax.x, oMax.y};
         }
 
         void traverse(std::function<void(const Clip&)> func) const
         {
             func(*this);
+            for (const auto& c : mergedRects) c.traverse(func);
+        }
+
+        void traverseChild(std::function<void(const Clip&)> func) const
+        {
             for (const auto& c : mergedRects) c.traverse(func);
         }
 

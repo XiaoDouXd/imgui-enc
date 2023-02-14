@@ -14,6 +14,7 @@ namespace CC
     static float mPosXprev, mPosYprev;
     static int wPosX, wPosY, wSizeW, wSizeH;
     static float mPosX, mPosY;
+    static int wBtop, wBbottom, wBleft, wBright;
 
     static const clock_t mouseClickTimeLimit    = 1000;
     static bool         mouseDownStatePrev[5]   = {};
@@ -23,7 +24,7 @@ namespace CC
 
     static inline PosEdgeType atEdge(const float& x, const float& y, const float& rw, const float& rh)
     {
-        static const float deviation = 5.0f;
+        static const float deviation = 8.0f;
         static float dw, dh;
         dw = rw - deviation;
         dh = rh - deviation;
@@ -74,11 +75,12 @@ namespace CC
 
     static void resizeWindowCursor()
     {
+        SDL_GetWindowBordersSize(App::getWHandle(), &wBtop, &wBleft, &wBbottom, &wBright);
         if (App::getEventSwitch(EventSwitch::ResizeWindow))
         {
             static ImVec2 mPos;
             mPos = ImGui::GetMousePos();
-            mousePosType = atEdge(mPos.x, mPos.y, App::getW(), App::getH());
+            mousePosType = atEdge(mPos.x + wBleft, mPos.y + wBtop, App::getW() + wBright + wBleft, App::getH() + wBbottom + wBtop);
             switch (mousePosType)
             {
             case PosEdgeType::MD:

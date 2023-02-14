@@ -82,7 +82,7 @@ namespace CC
         ImGuiIO& io = ImGui::GetIO(); (void)io;
 
         // 绑定到 vulkan 实例
-        SDL_WindowFlags wndFlags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS);
+        SDL_WindowFlags wndFlags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_ALLOW_HIGHDPI /*| SDL_WINDOW_RESIZABLE/*| SDL_WINDOW_BORDERLESS*/);
 #ifdef CC_WAIT_TIME
         _inst->window = SDL_CreateWindow(wndName, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, CC_WINDOW_LODING_WIDTH, CC_WINDOW_LODING_HEIGHT, wndFlags);
         setEventSwitch(EventSwitch::ResizeWindow, 0);
@@ -132,6 +132,13 @@ namespace CC
                 quit = true;
             if (isWindowEvent(event) && event.window.type == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(_inst->window))
                 quit = true;
+            static int w, h;
+            // if (isWindowEvent(event) && event.window.type == SDL_WINDOWEVENT_SIZE_CHANGED && event.window.windowID == SDL_GetWindowID(_inst->window))
+            // {
+            //     // 由于 DefWindowProc 会在重设大小时阻塞程序运行 这里不使用 winApi 提供的窗口大小重设方法
+            //     SDL_GetWindowSize(_inst->window, &w, &h);
+            //     ImguiMgr::getIO().DisplaySize = {(float)w, (float)h};
+            // }
             checkEvent(event);
         }
 
@@ -200,8 +207,8 @@ namespace CC
 
     void App::onDestroy()
     {
-        auto err = vkDeviceWaitIdle(VulkanMgr::getDev());
-        VulkanMgr::checkVkResultCtype(err);
+        auto err = vkDeviceWaitIdle(CC::VulkanMgr::getDev());
+        CC::VulkanMgr::checkVkResultCtype(err);
 
         WndMgr::destory();
         ImGui_ImplVulkan_Shutdown();

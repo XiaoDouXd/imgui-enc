@@ -25,6 +25,7 @@ namespace CC
         _inst->context = ImGui::CreateContext();
         ImGui::SetCurrentContext(_inst->context);
         _inst->io = &(ImGui::GetIO());
+        _inst->io->IniFilename = "clipTool.ini";
 
         _inst->wHandle.Surface = surf;
         auto res = VulkanMgr::getPhyDev().getSurfaceSupportKHR(VulkanMgr::getQueueFamily(), surf);

@@ -7,6 +7,7 @@
 #include "imgui_internal.h"
 
 #include "base/wndBase.hpp"
+#include "core/imgCtrl.h"
 #include "ctrlPanel.hpp"
 #include "picPanel.hpp"
 
@@ -17,6 +18,7 @@ namespace CC::UI
     static size_t picPanelId = 0;
     static void openPicPanel()
     {
+        if (ImgCtrl::empty()) ImgCtrl::pushBack();
         if (picPanelId == 0)
         {
             auto data = new WndDataDefault();
@@ -97,6 +99,7 @@ namespace CC::UI
     private:
         ImGuiWindowFlags windowFlags    = 0;
         ImGuiDockNodeFlags dockFlags    = 0;
+        ImGuiWindowFlags btnPanelFlags  = 0;
         bool open                       = true;
         ImDrawList* drawList            = nullptr;
         ImVec2 _pLU                     = ImVec2(0, 0);
@@ -113,6 +116,10 @@ namespace CC::UI
             windowFlags |= ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
             windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar;
             windowFlags |= ImGuiWindowFlags_NoDocking;
+
+            btnPanelFlags |= ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
+            btnPanelFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar;
+            btnPanelFlags |= ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize;
 
             dockFlags;
 
@@ -132,6 +139,7 @@ namespace CC::UI
 
         bool onWndBegin() override
         {
+            drawWinBtn();
             const ImGuiViewport* viewport = ImGui::GetMainViewport();
             ImGui::SetNextWindowPos(viewport->WorkPos);
             ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -186,6 +194,15 @@ namespace CC::UI
         void docking()
         {
             ImGui::DockSpace(ImGui::GetID("mainPanel_docking"), {0.f, 0.f}, dockFlags);
+        }
+
+        void drawWinBtn()
+        {
+            const ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos({viewport->WorkPos.x, viewport->WorkSize.y - 50.f});
+            ImGui::SetNextWindowViewport(viewport->ID);
+            ImGui::Begin("winBtnPanel", nullptr, btnPanelFlags);
+            ImGui::End();
         }
 
         // ---------------------------- 绑定事件

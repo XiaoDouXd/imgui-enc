@@ -56,5 +56,6 @@ void init(int argc, char* argv[])
 
 void quit()
 {
+    CC::ImgCtrl::clear();
     CC::mainUnit.reset();
 }
