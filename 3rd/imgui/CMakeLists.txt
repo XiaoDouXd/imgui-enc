@@ -46,8 +46,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES})
 
 # 添加 SDL
-target_include_directories(${PROJECT_NAME} PUBLIC ../SDL3/include/SDL3)
+target_include_directories(${PROJECT_NAME} PUBLIC ../SDL3/include)
 target_link_libraries(${PROJECT_NAME} PUBLIC SDL3-static)
+
+# 添加 SDL_image
+target_include_directories(${PROJECT_NAME} PUBLIC ../SDL3_image/include)
+target_link_libraries(${PROJECT_NAME} PUBLIC SDL3_image)
 
 # 添加 freetype
 find_package(Freetype REQUIRED)

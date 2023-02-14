@@ -196,8 +196,8 @@ namespace CC::UI
 
                     if (_isMouseInVp)
                     {
-                        _p0.x += (_wMousePos.x * _sOld - _wMousePos.x * _s) / 2;
-                        _p0.y += (_wMousePos.y * _sOld - _wMousePos.y * _s) / 2;
+                        _p0.x += (_cMousePos.x * _sOld - _cMousePos.x * _s) / 2;
+                        _p0.y += (_cMousePos.y * _sOld - _cMousePos.y * _s) / 2;
                     }
                     else
                     {

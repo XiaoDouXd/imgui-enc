@@ -1,14 +1,16 @@
 #include "_/__app_caller.hpp"
 #include "app.h"
 
+#include <iostream>
+#include <SDL3/SDL_image.h>
+
 #include "ccexce.h"
 #include "entrance.h"
 #include "imgui_impl_sdl.h"
 #include "imguiMgr.h"
-#include <iostream>
 #include "ui/base/wndMgr.h"
 
-#include "IMGS_TEST_ICON_BMP.h"
+#include "IMGS_CLIPTOOLICON_PNG.h"
 
 namespace CC
 {
@@ -93,7 +95,8 @@ namespace CC
         SDL_GetWindowSize(_inst->window, &w, &h);
 
         auto iconSurf = SDL_RWFromConstMem((void*) CC::RC::CC_WINDOW_ICON.data(), CC::RC::CC_WINDOW_ICON.size());
-        SDL_SetWindowIcon(_inst->window, nullptr);
+        auto icon = IMG_LoadPNG_RW(iconSurf);
+        SDL_SetWindowIcon(_inst->window, icon);
                 uint32_t extensionsCount = 0;
         SDL_Vulkan_GetInstanceExtensions(_inst->window, &extensionsCount, NULL);
         const char** extensions = new const char*[extensionsCount];
