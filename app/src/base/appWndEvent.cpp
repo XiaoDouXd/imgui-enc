@@ -465,7 +465,7 @@ namespace CC
     /// @param event 事件在处理
     void App::checkEvent(const SDL_Event& event)
     {
-        resizeWindow();
+        // resizeWindow();
         moveWindow();
         dropFile(event);
         shortcut(event);

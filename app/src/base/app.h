@@ -138,13 +138,13 @@ namespace CC
         // ---------------------------------- 内部函数
 
         static void init(const char* wndName);
-        static void onUpdate(bool& quit);
+        static void onUpdate(bool& quit, bool checkPlatformSpecialEvent = true);
         static void onDestroy();
         static void updateHead(bool& quit);
         static void updateTail();
 
         // ---------------------------------- 窗口事件检测
-
+        static void eventRefresh(bool& quit, bool checkPlatformSpecialEvent = true);
         static void checkEvent(const SDL_Event& event);
         static void checkFrame();
         static void checkInit();

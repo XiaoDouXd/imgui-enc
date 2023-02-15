@@ -8,9 +8,11 @@
 #include "entrance.h"
 #include "imgui_impl_sdl.h"
 #include "imguiMgr.h"
+#include "platform/univesal.h"
 #include "ui/base/wndMgr.h"
 
 #include "IMGS_CLIPTOOLICON_PNG.h"
+
 
 namespace CC
 {
@@ -84,7 +86,7 @@ namespace CC
         ImGuiIO& io = ImGui::GetIO(); (void)io;
 
         // 绑定到 vulkan 实例
-        SDL_WindowFlags wndFlags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_ALLOW_HIGHDPI /*| SDL_WINDOW_RESIZABLE/*| SDL_WINDOW_BORDERLESS*/);
+        SDL_WindowFlags wndFlags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE/*| SDL_WINDOW_BORDERLESS*/);
 #ifdef CC_WAIT_TIME
         _inst->window = SDL_CreateWindow(wndName, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, CC_WINDOW_LODING_WIDTH, CC_WINDOW_LODING_HEIGHT, wndFlags);
         setEventSwitch(EventSwitch::ResizeWindow, 0);
@@ -119,17 +121,18 @@ namespace CC
         checkInit();
     }
 
-    void App::updateHead(bool& quit)
+    void App::eventRefresh(bool& quit, bool checkPlatformSpecialEvent)
     {
-        checkFrame();
-
-        // 处理事件
+        // 在此处处理事件处理事件
         // 设置 io.WantCaptureMouse, io.WantCaptureKeyboard 让 imgui 使用自定义输入
         // - io.WantCaptureMouse 为 true 时, 不再处理鼠标输入事件
         // - io.WantCaptureKeyboard 为 true 时, 不再捕获键盘输入事件
         static SDL_Event event;
         while (SDL_PollEvent(&event))
         {
+#ifndef CC_NO_PLATFORM_SPECIAL_EVENT
+            if(checkPlatformSpecialEvent) platformSpecialEvent(quit, event);
+#endif
             ImGui_ImplSDL2_ProcessEvent(&event);
             if (event.type == SDL_QUIT)
                 quit = true;
@@ -144,7 +147,11 @@ namespace CC
             // }
             checkEvent(event);
         }
+    }
 
+    void App::updateHead(bool& quit)
+    {
+        checkFrame();
         // 重设交换链大小
         ImguiMgr::preRender(_inst->window, _inst->w, _inst->h);
         TimeMgr::refresh();
@@ -181,8 +188,9 @@ namespace CC
         }
     }
 
-    void App::onUpdate(bool& quit)
+    void App::onUpdate(bool& quit, bool checkPlatformSpecialEvent)
     {
+        eventRefresh(quit, checkPlatformSpecialEvent);
         updateHead(quit);
         quit |= _inst->willQuit;
         _inst->checkStart = _inst->newLoopUnit;
@@ -268,6 +276,9 @@ int main(int argc, char* argv[])
     try
     {
         CC::__app_caller::init(CC_WINDOW_NAME);
+#ifndef CC_NO_PLATFORM_SPECIAL_INIT
+        CC::platformSpecialInit();
+#endif
         init(argc, argv);
         bool done = false;
         while (!done) CC::__app_caller::onUpdate(done);
