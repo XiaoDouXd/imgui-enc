@@ -96,17 +96,16 @@ namespace CC
                 pos.x < min.x + size.x && pos.y < min.y + size.y)
                 return true;
             else for (const auto& i : mergedRects)
-                if (i.test(pos)) return true;
+                if (i.test(pos - min)) return true;
             return false;
         }
 
-        bool test(glm::ivec4 rect) const
+        bool test(glm::ivec2 rMin, glm::ivec2 rSize) const
         {
-            auto rSize = glm::ivec2(rect.z - rect.x, rect.w - rect.y);
-            if (twoRectTest(min, size, glm::ivec2(glm::min(rect.x, rect.z), glm::min(rect.y, rect.w)), {glm::abs(rSize.x), glm::abs(rSize.y)}))
+            if (twoRectTest(min, size, rMin, rSize))
                 return true;
             else for (const auto& i : mergedRects)
-                if (i.test(rect)) return true;
+                if (i.test(rMin - min, rSize)) return true;
             return false;
         }
 

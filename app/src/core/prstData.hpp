@@ -76,6 +76,7 @@ namespace CC
     public:
         bool isCanRedo() { return _curOp != _ops.cend(); }
         bool isCanUndo() { return _curOp != _ops.cbegin(); }
+        void clear() { _ops.clear(); _curOp = _ops.cend(); }
 
         void undo()
         {

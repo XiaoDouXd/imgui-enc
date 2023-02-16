@@ -29,7 +29,6 @@ namespace CC::UI
     {
     private:
         // ------------------- 窗口设置
-
         ImGuiWindowFlags windowFlags    = 0;
         ImVec4 clearColor               = ImVec4(0.22f, 0.22f, 0.22f, 1.00f);
 
@@ -53,16 +52,8 @@ namespace CC::UI
 
             if (ImGui::BeginTabItem("生成"))
             {
-                // static float f = 0.0f;
-                // ImGui::Text("行文本.");                                 // Display some text (you can use a format strings too)
-                // ImGui::InputInt2(gSizeLabel, _gridPop_rectWidth);
-
                 if (ImGui::Button(createGrid))
                     _gridPop_createGridPopShow = true;
-
-                // ImGui::SliderFloat("浮点数", &f, 0.0f, 1.0f);           // Edit 1 float using a slider from 0.0f to 1.0f
-                // ImGui::ColorEdit3("背景色", (float*)&clearColor);       // Edit 3 floats representing a color
-                // ImGui::SameLine();
 
                 ImGui::Text("程序刷新率 %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
                 ImGui::EndTabItem();
@@ -151,8 +142,12 @@ namespace CC::UI
                 auto i = size_t(0);
 
                 curHoveredClip = -1;
-                for (int i = 0; i < clips.size(); i++)
+                ImGuiListClipper clipper;
+                clipper.Begin(clips.size(), ImGui::GetTextLineHeightWithSpacing());
+                while (clipper.Step())
+                for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                 {
+                    ImGui::PushID(i);
                     _clipList_clipName = "        [" + std::to_string(i) + "] " + (std::string)clips[i];
                     if (ImGui::Selectable(_clipList_clipName.c_str(), curSelectedClips[i]))
                     {
@@ -212,7 +207,9 @@ namespace CC::UI
                         }
                     }
                     ImGui::Separator();
+                    ImGui::PopID();
                 }
+
                 ImGui::EndListBox();
                 if (rectTest(ImGui::GetMousePos(),
                     ImGui::GetItemRectMin(),
@@ -319,18 +316,6 @@ namespace CC::UI
                     _delEmptyPop_show = false;
             }
             ImGui::End();
-        }
-
-        // -------------------------------------------- 切片修改
-        void clipChangePanel()
-        {
-            // if (ImGui::BeginTabItem("调整"))
-            // {
-            //     for (const auto& c : clipChanges)
-            //     {
-            //         if (c.first < cur curSelectedClips[c.first])
-            //     }
-            // }
         }
     };
 

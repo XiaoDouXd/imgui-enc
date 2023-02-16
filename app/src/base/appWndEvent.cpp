@@ -457,7 +457,7 @@ namespace CC
     /// @brief 每帧检测的事件处理核心
     void App::checkFrame()
     {
-        resizeWindowCursor();
+        // resizeWindowCursor();
         mouseCheck();
     }
 

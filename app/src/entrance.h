@@ -4,7 +4,7 @@
 
 // ================================================== 程序参数预定义
 #define CC_WINDOW_ICON CC_RC_IMGS_CLIPTOOLICON_PNG // 窗口图标
-#define CC_WINDOW_NAME "XDClipTool"                // 窗口名称
+#define CC_WINDOW_NAME "🔪🩸💔😨"                 // 窗口名称
 // #define CC_WAIT_TIME 5                      // 窗口 Loading 界面最小等待时间
 #define CC_WINDOW_DEFAULT_WIDTH 640         // 默认窗口宽
 #define CC_WINDOW_DEFAULT_HEIGHT 360        // 默认窗口高

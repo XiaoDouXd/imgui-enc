@@ -26,6 +26,12 @@ namespace CC
                 min.y + size.y > min2.y && min2.y + size2.y > min.y;
     }
 
+    static inline bool twoRectTestFloat(glm::vec2 min, glm::vec2 size, glm::vec2 min2, glm::vec2 size2)
+    {
+        return  min.x + size.x > min2.x && min2.x + size2.x > min.x &&
+                min.y + size.y > min2.y && min2.y + size2.y > min.y;
+    }
+
     static inline bool rectTest(glm::ivec2 mousePos, glm::ivec2 rectMin, glm::ivec2 rectMax)
     {
         return  mousePos.x >= rectMin.x && mousePos.x <= rectMax.x &&

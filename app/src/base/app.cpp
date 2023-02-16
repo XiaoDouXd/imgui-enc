@@ -63,6 +63,7 @@ namespace CC
 
     std::unique_ptr<App::WndData> App::_inst = nullptr;
     std::unique_ptr<App::WndEventData> App::_eventStateInst = nullptr;
+    static bool wndBoraded = false;
 
     // -----------------------------------------------------------------------------------------
 
@@ -86,9 +87,11 @@ namespace CC
         ImGuiIO& io = ImGui::GetIO(); (void)io;
 
         // 绑定到 vulkan 实例
-        SDL_WindowFlags wndFlags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE/*| SDL_WINDOW_BORDERLESS*/);
+        SDL_WindowFlags wndFlags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+        wndBoraded = !(wndFlags & SDL_WINDOW_BORDERLESS);
 #ifdef CC_WAIT_TIME
         _inst->window = SDL_CreateWindow(wndName, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, CC_WINDOW_LODING_WIDTH, CC_WINDOW_LODING_HEIGHT, wndFlags);
+        SDL_SetWindowBordered(_inst->window, SDL_FALSE);
         setEventSwitch(EventSwitch::ResizeWindow, 0);
 #else
         _inst->window = SDL_CreateWindow(wndName, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, CC_WINDOW_DEFAULT_WIDTH - 1, CC_WINDOW_DEFAULT_HEIGHT, wndFlags);
@@ -131,6 +134,7 @@ namespace CC
         static SDL_Event event;
         while (SDL_PollEvent(&event))
         {
+            // 平台特化的事件处理
 #ifndef CC_NO_PLATFORM_SPECIAL_EVENT
             if(checkPlatformSpecialEvent) platformSpecialEvent(quit, event);
 #endif
@@ -140,12 +144,6 @@ namespace CC
             if (isWindowEvent(event) && event.window.type == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(_inst->window))
                 quit = true;
             static int w, h;
-            // if (isWindowEvent(event) && event.window.type == SDL_WINDOWEVENT_SIZE_CHANGED && event.window.windowID == SDL_GetWindowID(_inst->window))
-            // {
-            //     // 由于 DefWindowProc 会在重设大小时阻塞程序运行 这里不使用 winApi 提供的窗口大小重设方法
-            //     SDL_GetWindowSize(_inst->window, &w, &h);
-            //     ImguiMgr::getIO().DisplaySize = {(float)w, (float)h};
-            // }
             checkEvent(event);
         }
     }
@@ -153,6 +151,7 @@ namespace CC
     void App::updateHead(bool& quit)
     {
         checkFrame();
+
         // 重设交换链大小
         ImguiMgr::preRender(_inst->window, _inst->w, _inst->h);
         TimeMgr::refresh();
@@ -169,6 +168,7 @@ namespace CC
             (TimeMgr::now() - _inst->startClock) > (CC_WAIT_TIME * 1000))
         {
             static int x, y;
+            if (wndBoraded) SDL_SetWindowBordered(_inst->window, SDL_TRUE);
             SDL_SetWindowSize(_inst->window, CC_WINDOW_DEFAULT_WIDTH, CC_WINDOW_DEFAULT_HEIGHT);
             SDL_GetWindowPosition(_inst->window, &x, &y);
             SDL_SetWindowPosition(_inst->window,

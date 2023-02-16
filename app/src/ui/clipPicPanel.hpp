@@ -192,10 +192,12 @@ namespace CC::UI
 
                 if (_selectStart)
                 {
+                    auto rMin = glm::ivec2(glm::min(_selectBox.x, _selectBox.z), glm::min(_selectBox.y, _selectBox.w));
+                    auto rSize = glm::abs(glm::ivec2(_selectBox.z - _selectBox.x, _selectBox.w - _selectBox.y));
                     for (size_t i = 0; i < ClipCtrl::getCurClips().size(); i++)
                     {
                         if (i >= _selectedCache.size()) break;
-                        _selectedCache[i] = ClipCtrl::getCurClips()[i].test(_selectBox);
+                        _selectedCache[i] = ClipCtrl::getCurClips()[i].test(rMin, rSize);
                     }
                 }
 
