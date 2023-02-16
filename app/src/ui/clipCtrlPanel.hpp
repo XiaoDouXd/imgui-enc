@@ -97,12 +97,18 @@ namespace CC::UI
         bool _gridPop_createGridPopShow              = false;
         void createGridPop()
         {
+            gridCreatePreviewShown = _gridPop_createGridPopShow;
             if (!_gridPop_createGridPopShow) return;
             ImGui::Begin("创建网格切片", &_gridPop_createGridPopShow, popFlag);
 
             ImGui::InputInt2(gSizeLabel, _gridPop_rectWidth, ImGuiInputTextFlags_CharsDecimal);
             ImGui::InputInt2(gOffsetLabel, _gridPop_rectOffset);
             ImGui::InputInt2(gCountLabel, _gridPop_rectCount);
+
+            gridCreatePreviewP0 = glm::ivec2(_gridPop_rectOffset[0], _gridPop_rectOffset[1]);
+            gridCreatePreviewLineCount = glm::ivec2(_gridPop_rectCount[0], _gridPop_rectCount[1]);
+            gridCreatePreviewSize = glm::ivec2(_gridPop_rectWidth[0], _gridPop_rectWidth[1]);
+
             if (ImGui::Button(createGridOK))
             {
                 if (_gridPop_rectCount[0]  <= 0 || _gridPop_rectCount[1] <= 0)

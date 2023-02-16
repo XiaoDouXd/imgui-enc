@@ -41,18 +41,26 @@ namespace CC
         }
     }
 
-    void ImgCtrl::draw(const Clip& clip, glm::ivec2 p0, std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc)
+    void ImgCtrl::draw(
+        const Clip& clip,
+        std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc)
+    { draw(clip, dFunc, clip.min); }
+
+    void ImgCtrl::draw(
+        const Clip& clip,
+        std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc,
+        glm::ivec2 __pRoot,
+        glm::ivec2 __pLocal)
     {
+        if (clip.empty) return;
         // --------------------------------------------
         //        |rect |img  |rect  |img  |
         glm::ivec2 min1, min2, size1, size2, size;
         glm::vec2 uvMin, uvMax;
         for (const auto& i : _inst->imgs)
         {
-            min1 = clip.min;
-            size1 = clip.size;
-            min2 = i.pos;
-            size2 = i.getSize();
+            min1 = clip.min + __pLocal; size1 = clip.size;
+            min2 = i.pos; size2 = i.getSize();
             if (twoRectTest(min1, size1, min2, size2))
             {
                 uvMin.x = glm::clamp(((float)(min1.x - min2.x) / size2.x), 0.f, 1.f);
@@ -61,17 +69,10 @@ namespace CC
                 uvMax.y = glm::clamp(((float)(min1.y + size1.y - min2.y) / size2.y), 0.f, 1.f);
                 size = glm::min(glm::min(min2 + size2 - min1, size1), min1 + size1 - min2);
                 if (size.x == 0 || size.y == 0) continue;
-                dFunc(i.getId(), glm::max(min1, min2) - p0, size, uvMin, uvMax);
+                dFunc(i.getId(), glm::max(min1, min2) - __pRoot, size, uvMin, uvMax);
             }
         }
-        clip.traverseChild([dFunc, p0](const Clip& c){ draw(c, p0, dFunc); });
-    }
-
-    void ImgCtrl::draw(const Clip& clip, std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc)
-    {
-        if (clip.empty) return;
-        const auto aabb = clip.getAABB();
-        draw(clip, glm::ivec2(aabb.x, aabb.y), dFunc);
+        clip.traverseChild([dFunc, __pRoot, __pLocal](const Clip& c, const Clip* p){ draw(c, dFunc, __pRoot, __pLocal + p->min); });
     }
 
     void ImgCtrl::popBack(bool recy)

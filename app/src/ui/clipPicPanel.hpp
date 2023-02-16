@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <string>
 
 #include "core/clipCtrl.h"
@@ -8,7 +9,7 @@
 #include "base/wndBase.hpp"
 #include "math.h"
 #include "unit/imgUnit.h"
-#include "ctrlPanel.hpp"
+#include "clipCtrlPanel.hpp"
 
 #include "imgui_internal.h"
 
@@ -19,12 +20,13 @@ namespace CC::UI
     const ImageUnit::ImageUnitDesc ImageUnit::_emptyImgUnitDesc = {};
 
     /// @brief 主界面 UI
-    class PicPanel : public WndBase<PicPanel>
+    class ClipPicPanel : public WndBase<ClipPicPanel>
     {
     private:
         // ------------------- 窗口设置
         ImGuiWindowFlags windowFlags    = 0;
         bool _refreshP0                 = true;
+        std::stringstream _ss;
 
         // ------------------- 图像绘制相关
         bool _isMouseInVp               = false;
@@ -48,7 +50,7 @@ namespace CC::UI
         glm::ivec2 _wSize              = {};
         glm::ivec2 _wMousePos          = {};
         glm::ivec2 _cMousePos          = {};
-        std::string _posStr        = {};
+        std::string _posStr            = {};
 
     protected:
         void onShow(WndDataBaseHolder*) override
@@ -67,9 +69,10 @@ namespace CC::UI
 
         void onRefresh() override
         {
-            _drawList->AddText({_wPos.x + 4.f, (float)_wMax.y - 26}, IM_COL32_BLACK, _posStr.c_str());
-            ImGui::PushClipRect({(float)_wPos.x, (float)_wPos.y}, {(float)_wMax.x, (float)_wMax.y - 26}, true);
             ctrlScale();
+            ctrlChange();
+            _drawList->AddText({_wPos.x + 4.f, (float)_wMax.y - 26}, IM_COL32_BLACK, _ss.str().c_str());
+            ImGui::PushClipRect({(float)_wPos.x, (float)_wPos.y}, {(float)_wMax.x, (float)_wMax.y - 26}, true);
             drawAlphaBg();
             drawImg();
             drawClips();
@@ -95,8 +98,8 @@ namespace CC::UI
                 };
 
                 _wMousePos = {
-                    ImGui::GetMousePos().x - _wPos.x,
-                    ImGui::GetMousePos().y - _wPos.y
+                    floor(ImGui::GetMousePos().x - _wPos.x),
+                    floor(ImGui::GetMousePos().y - _wPos.y)
                 };
 
                 if (_refreshP0)
@@ -110,13 +113,10 @@ namespace CC::UI
                 }
 
                 _cMousePos = {
-                    (_wMousePos.x - _p0.x) / _s,
-                    (_wMousePos.y - _p0.y) / _s
+                    floor((_wMousePos.x - _p0.x) / _s),
+                    floor((_wMousePos.y - _p0.y) / _s)
                 };
 
-                _posStr = "| (" +
-                    std::to_string((int)((_wMousePos.x - _p0.x) / _s)) + ", " +
-                    std::to_string((int)((_wMousePos.y - _p0.y) / _s)) + ") |";
 
                 _drawList = ImGui::GetWindowDrawList();
 
@@ -125,6 +125,11 @@ namespace CC::UI
                     _selectedCache.resize(curSelectedClips.size());
                     for (auto& i : _selectedCache) i = false;
                 }
+
+                _ss.str(std::string());
+                _ss << "| (" << std::to_string(_cMousePos.x) << ", " << std::to_string(_cMousePos.y) << ") | ";
+                _ss << std::fixed << std::setprecision(2) << _s * 100.f;
+                _ss << "%";
 
                 return true;
             }
@@ -147,15 +152,19 @@ namespace CC::UI
                 _wMousePos.y <= _wSize.y;
             if (_isMouseInVp && !ImGui::IsWindowDocked()) windowFlags |= ImGuiWindowFlags_NoMove;
             else windowFlags &= !ImGuiWindowFlags_NoMove;
+            if (!ImGui::IsWindowFocused()) return;
 
-            if (ImGui::IsWindowFocused() && rectTest({ImGui::GetMousePos().x, ImGui::GetMousePos().y}, _wPos, _wMax))
+            if (rectTest({ImGui::GetMousePos().x, ImGui::GetMousePos().y}, _wPos, _wMax))
             {
-                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && !ImguiMgr::getIO().KeyAlt)
                 {
                     for (auto& i : _selectedCache) i = false;
                     curSelectedClipsReset = true;
                 }
-                if (ImguiMgr::getIO().KeyCtrl && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Middle))
+                    _s = 1.f;
+
+                if (ImguiMgr::getIO().KeyCtrl && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImguiMgr::getIO().KeyAlt)
                 {
                     for (size_t i = 0; i < ClipCtrl::getCurClips().size(); i++)
                     {
@@ -164,7 +173,7 @@ namespace CC::UI
                             curSelectedClips[i] = !curSelectedClips[i];
                     }
                 }
-                if (ImguiMgr::getIO().KeyCtrl && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+                if (ImguiMgr::getIO().KeyCtrl && !ImguiMgr::getIO().KeyAlt && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
                 {
                     if (!_selectStart) {_selectBox.x = _cMousePos.x; _selectBox.y = _cMousePos.y;}
                     _selectBox.z = _cMousePos.x; _selectBox.w = _cMousePos.y;
@@ -174,7 +183,10 @@ namespace CC::UI
                 {
                     for (size_t i = 0; i < _selectedCache.size(); i++)
                         if (i < curSelectedClips.size() && !ClipCtrl::getCurClips()[i].empty)
+                        {
                             curSelectedClips[i] |= _selectedCache[i];
+                            _selectedCache[i] = false;
+                        }
                     _selectStart = false;
                 }
 
@@ -190,7 +202,7 @@ namespace CC::UI
                 if (ImguiMgr::getIO().MouseWheel != 0)
                 {
                     auto _sOld = _s;
-                    _s += ImguiMgr::getIO().MouseWheel * (_s * 0.16f);
+                    _s += ImSign(ImguiMgr::getIO().MouseWheel) * (_s * 0.1f);
                     if (_s <= 0.05f) _s = 0.05f;
                     if (_s > 36.f) _s = 36.f;
 
@@ -207,7 +219,7 @@ namespace CC::UI
                 }
             }
 
-            if (_isMouseInVp && ImGui::IsWindowFocused())
+            if (_isMouseInVp && !ImguiMgr::getIO().KeyAlt)
             {
                 if (!ImguiMgr::getIO().KeyCtrl &&
                     ImGui::IsMouseDragging(ImGuiMouseButton_Left) &&
@@ -217,12 +229,93 @@ namespace CC::UI
                     _p0.x += ImguiMgr::getIO().MouseDelta.x;
                     _p0.y += ImguiMgr::getIO().MouseDelta.y;
 
-                    if (_p0.x < -2 * _aabbRect.x * _s) _p0.x = -2 * _aabbRect.x * _s;
-                    if (_p0.y < -2 * _aabbRect.y * _s) _p0.y = -2 * _aabbRect.y * _s;
-                    if (_p0.x > _aabbRect.x * _s + _wSize.x) _p0.x = _aabbRect.x * _s + _wSize.x;
-                    if (_p0.y > _aabbRect.y * _s + _wSize.y) _p0.y = _aabbRect.y * _s + _wSize.y;
                 }
             }
+            if (_p0.x < -2 * _aabbRect.x * _s) _p0.x = -2 * _aabbRect.x * _s;
+            if (_p0.y < -2 * _aabbRect.y * _s) _p0.y = -2 * _aabbRect.y * _s;
+            if (_p0.x > _aabbRect.x * _s + _wSize.x) _p0.x = _aabbRect.x * _s + _wSize.x;
+            if (_p0.y > _aabbRect.y * _s + _wSize.y) _p0.y = _aabbRect.y * _s + _wSize.y;
+        }
+
+        bool _changeData = false;
+        bool _dragOuter = false;
+        bool _isSelectedEmpty = true;
+        bool _startDrag = false;
+        glm::ivec2 _changeDDcache;
+        glm::ivec2 _changeFrameP0;
+        glm::ivec2 _changeFrameSize;
+        glm::ivec2 _changeOffset;
+        glm::vec2 _changeScale = {1.f, 1.f};
+        void ctrlChange()
+        {
+            if (!ImGui::IsWindowFocused() || !ImguiMgr::getIO().KeyAlt || _dragOuter)
+            {
+                if (_changeData && (_changeOffset != glm::ivec2() || _changeScale != glm::vec2(1.f, 1.f)))
+                {
+                    auto l = std::list<std::pair<size_t, Clip>>();
+                    glm::ivec2 scaleOffset, scaleSize;
+                    for (size_t i = 0; i < curSelectedClips.size(); i++)
+                    if (curSelectedClips[i] && i < ClipCtrl::getCurClips().size())
+                    {
+                        auto c = ClipCtrl::getCurClips()[i];
+                        scaleOffset.x = glm::floor((c.min - _changeFrameP0).x * _changeScale.x);
+                        scaleOffset.y = glm::floor((c.min - _changeFrameP0).y * _changeScale.y);
+                        scaleSize.x = glm::floor(c.size.x * _changeScale.x);
+                        scaleSize.y = glm::floor(c.size.y * _changeScale.y);
+                        c.min = scaleOffset + _changeFrameP0 + _changeOffset;
+                        c.size = scaleSize;
+                        l.push_back({i, c});
+                    }
+                    ClipCtrl::set(l);
+                    _changeOffset = {};
+                }
+                if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) _dragOuter = true;
+                else _dragOuter = false;
+                _changeData = false;
+                return;
+            }
+
+            // 初始化数据
+            if (!_changeData)
+            {
+                _changeFrameP0 = {INT_MAX, INT_MAX};
+                _changeFrameSize = {INT_MIN, INT_MIN};
+                _changeOffset = {};
+                _changeScale = {1.f, 1.f};
+                _isSelectedEmpty = true;
+                for (size_t i = 0; i < curSelectedClips.size(); i++)
+                {
+                    if (!curSelectedClips[i] || i >= ClipCtrl::getCurClips().size()) continue;
+                    _isSelectedEmpty = false;
+                    _changeFrameP0 = glm::min(ClipCtrl::getCurClips()[i].min, _changeFrameP0);
+                    _changeFrameSize = glm::max(
+                        ClipCtrl::getCurClips()[i].min + ClipCtrl::getCurClips()[i].size,
+                        _changeFrameSize);
+                }
+                if (!_isSelectedEmpty) _changeFrameSize -= _changeFrameP0;
+            }
+            _changeData = true;
+            if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))
+                _changeOffset -= glm::ivec2(1, 0);
+            if (ImGui::IsKeyPressed(ImGuiKey_RightArrow))
+                _changeOffset += glm::ivec2(1, 0);
+            if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
+                _changeOffset -= glm::ivec2(0, 1);
+            if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
+                _changeOffset += glm::ivec2(0, 1);
+
+            if (ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+            {
+                if (!_startDrag) _changeDDcache = _changeOffset;
+                _startDrag = true;
+
+                auto dd = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+                _changeOffset = glm::ivec2(dd.x / _s, dd.y / _s) + _changeDDcache;
+            }
+            else _startDrag = false;
+
+            _ss << " |+(" << _changeOffset.x << ", " << _changeOffset.y << ") = ("
+                << _changeFrameP0.x + _changeOffset.x << ", " << _changeFrameP0.y + _changeOffset.y << ")";
         }
 
         void onShortcut(Shortcut k)
@@ -255,6 +348,20 @@ namespace CC::UI
                 addClip(i);
             if (_selectStart)
                 addRect({_selectBox.x, _selectBox.y}, {_selectBox.z - _selectBox.x, _selectBox.w - _selectBox.y}, IM_COL32_BLACK);
+            if (!_isSelectedEmpty && _changeData)
+                addRect(_changeFrameP0 + _changeOffset, _changeFrameSize, IM_COL32_BLACK);
+
+            if (gridCreatePreviewShown)
+            {
+                for (size_t i = 0; i < gridCreatePreviewLineCount.x; i++)
+                for (size_t j = 0; j < gridCreatePreviewLineCount.y; j++)
+                {
+                    addRect(
+                        gridCreatePreviewP0 + glm::ivec2(i * gridCreatePreviewSize.x, j * gridCreatePreviewSize.y),
+                        gridCreatePreviewSize,
+                        ImColor(1.f, 1.f, 0.f));
+                }
+            }
         }
 
         void drawAlphaBg()
@@ -262,19 +369,19 @@ namespace CC::UI
             auto rectWid_scale = scale(_alphaRectWid);
             while (rectWid_scale < 8.f) rectWid_scale *= 2;
 
-            for (auto i = _p0.x; i < rectWid_scale + _wSize.x; i += rectWid_scale * 2)
+            for (double i = _p0.x; i < rectWid_scale + _wSize.x; i += rectWid_scale * 2)
             {
-                for (auto j = _p0.y; j < rectWid_scale + _wSize.y; j += rectWid_scale * 2)
-                    addAlphaRect({i, j}, rectWid_scale);
-                for (auto j = _p0.y - 2*rectWid_scale; j > -rectWid_scale; j -= rectWid_scale * 2)
-                    addAlphaRect({i, j}, rectWid_scale);
+                for (double j = _p0.y; j < rectWid_scale + _wSize.y; j += rectWid_scale * 2)
+                    addAlphaRect({floor(i), floor(j)}, rectWid_scale);
+                for (double j = _p0.y - 2*rectWid_scale; j > -rectWid_scale; j -= rectWid_scale * 2)
+                    addAlphaRect({floor(i), floor(j)}, rectWid_scale);
             }
-            for (auto i = _p0.x - 2*rectWid_scale; i > -rectWid_scale; i -= rectWid_scale * 2)
+            for (double i = _p0.x - 2*rectWid_scale; i > -rectWid_scale; i -= rectWid_scale * 2)
             {
-                for (auto j = _p0.y; j < rectWid_scale + _wSize.y; j += rectWid_scale * 2)
-                    addAlphaRect({i, j}, rectWid_scale);
-                for (auto j = _p0.y - 2*rectWid_scale; j > -rectWid_scale; j -= rectWid_scale * 2)
-                    addAlphaRect({i, j}, rectWid_scale);
+                for (double j = _p0.y; j < rectWid_scale + _wSize.y; j += rectWid_scale * 2)
+                    addAlphaRect({floor(i), floor(j)}, rectWid_scale);
+                for (double j = _p0.y - 2*rectWid_scale; j > -rectWid_scale; j -= rectWid_scale * 2)
+                    addAlphaRect({floor(i), floor(j)}, rectWid_scale);
             }
         }
 
@@ -295,23 +402,21 @@ namespace CC::UI
         void addClip(size_t idx)
         {
             const auto& clip = ClipCtrl::getCurClips()[idx];
+
             if (clip.empty) return;
-            if (idx == curHoveredClip)
-                clip.traverse([this](const Clip& clip){
-                    this->addRectFilled(clip.min, clip.size, ImColor(0.f, 0.f, 1.f, 0.2f));
-                });
-            if (idx == curDragedClip)
-                clip.traverse([this](const Clip& clip){
-                    this->addRectFilled(clip.min, clip.size, ImColor(1.f, 0.f, 0.f, 0.2f));
-                });
-            if ((idx < curSelectedClips.size() && curSelectedClips[idx]) ||
-                (idx < _selectedCache.size() && _selectedCache[idx]))
-                clip.traverse([this](const Clip& clip){
-                    this->addRect(clip.min, clip.size, ImColor(1.f, 0.f, 0.f, 1.f));
-                });
-            else
-                clip.traverse([this](const Clip& clip){
-                    this->addRect(clip.min, clip.size, ImColor(0.f, 0.f, 1.f, 1.f));
+                clip.traverse([this, idx](const Clip& cClip, const Clip* pClip){
+                    if (idx == curHoveredClip)
+                            this->addRectFilled(cClip.min + pClip->min, cClip.size, ImColor(0.f, 1.f, 1.f, 0.4f));
+                    if (idx == curDragedClip)
+                        this->addRectFilled(cClip.min + pClip->min, cClip.size, ImColor(1.f, 0.f, 0.f, 0.2f));
+                    if ((idx < curSelectedClips.size() && curSelectedClips[idx]) ||
+                        (idx < _selectedCache.size() && _selectedCache[idx]))
+                    {
+                        this->addRect(cClip.min + pClip->min + this->_changeOffset, cClip.size, ImColor(1.f, 0.f, 0.f, 1.f));
+                        this->addRectFilled(cClip.min + pClip->min + this->_changeOffset, cClip.size, ImColor(1.f, 1.f, 0.f, 0.4f));
+                    }
+                    else
+                        this->addRect(cClip.min + pClip->min, cClip.size, ImColor(0.f, 0.f, 1.f, 1.f));
                 });
         }
 

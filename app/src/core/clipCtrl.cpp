@@ -3,7 +3,7 @@
 namespace CC
 {
     std::unique_ptr<ClipCtrl::ClipCtrlData> ClipCtrl::_inst = nullptr;
-
+    const Clip Clip::defaultClip = Clip(glm::ivec2(), glm::ivec2());
     static const std::vector<Clip> emptyClips = {};
 
     void ClipCtrl::init()
@@ -84,13 +84,17 @@ namespace CC
         _inst->prstInst.todo(Op::EraseClip, std::move(data));
     }
 
-    void ClipCtrl::set(size_t idx, const Clip& clip)
+    void ClipCtrl::set(const std::list<std::pair<size_t, Clip>>& clips)
     {
         if (!_inst) return;
-        if (idx >= _inst->clips.size()) return;
         ClipDoData data;
-        data.dObjs.push_back({idx, _inst->clips[idx]});
-        data.dObjs.push_back({idx, clip});
+        for (const auto& c : clips)
+        {
+            if (c.first >= _inst->clips.size()) continue;
+            data.dObjs.push_front({c.first, _inst->clips[c.first]});
+            data.dObjs.push_back({c.first, c.second});
+        }
+        if (data.dObjs.empty()) return;
         _inst->prstInst.todo(Op::ChangeClip, std::move(data));
     }
 

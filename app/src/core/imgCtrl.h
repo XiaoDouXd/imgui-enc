@@ -49,7 +49,11 @@ namespace CC
             _inst->force /= _inst->imgs.size();
             _inst->aabb = {min.x, min.y, max.x - min.x, max.y - min.y};
         }
-        static void draw(const Clip& clip, glm::ivec2 p0, std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc);
+        static void draw(
+            const Clip& clip,
+            std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc,
+            glm::ivec2 __pRoot,
+            glm::ivec2 __pLocal = glm::ivec2());
 
     public:
         static const PicData& front();

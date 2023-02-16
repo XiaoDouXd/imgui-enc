@@ -1,9 +1,9 @@
 #include "core/fileCtrl.h"
 #include "entrance.h"
 
-#include "ui/ctrlPanel.hpp"
+#include "ui/clipCtrlPanel.hpp"
 #include "ui/mainPanel.hpp"
-#include "ui/picPanel.hpp"
+#include "ui/clipPicPanel.hpp"
 
 #include "ui/staticPanelData.h"
 
@@ -41,6 +41,11 @@ namespace CC
 
     UI::MainPanel_cover* UI::MainPanel_cover::_this = nullptr;
     static std::unique_ptr<MainUnit> mainUnit = nullptr;
+
+    glm::ivec2 UI::gridCreatePreviewLineCount = {};
+    glm::ivec2 UI::gridCreatePreviewSize = {};
+    glm::ivec2 UI::gridCreatePreviewP0 = {};
+    bool UI::gridCreatePreviewShown = false;
 
     ssize_t UI::curHoveredClip = -1;
     ssize_t UI::curDragedClip = -1;

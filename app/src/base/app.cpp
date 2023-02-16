@@ -92,6 +92,7 @@ namespace CC
         setEventSwitch(EventSwitch::ResizeWindow, 0);
 #else
         _inst->window = SDL_CreateWindow(wndName, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, CC_WINDOW_DEFAULT_WIDTH - 1, CC_WINDOW_DEFAULT_HEIGHT, wndFlags);
+        SDL_SetWindowMinimumSize(_inst->window, CC_WINDOW_LODING_WIDTH, CC_WINDOW_LODING_HEIGHT);
 #endif
         int w, h;
         SDL_GetWindowSize(_inst->window, &w, &h);

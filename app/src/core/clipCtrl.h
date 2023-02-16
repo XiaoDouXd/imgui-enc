@@ -49,27 +49,45 @@ namespace CC
 
         glm::ivec4 getAABB() const
         {
-            glm::ivec2 oMin, oMax;
-            oMin = min;
-            oMax = min + size;
+            glm::ivec2 oMin = {}, oMax = size;
             for (const auto& c : mergedRects)
             {
                 const auto& cAABB = c.getAABB();
                 oMin = glm::min(oMin, glm::ivec2(cAABB.x, cAABB.y));
                 oMax = glm::max(oMax, glm::ivec2(cAABB.z, cAABB.w));
             }
-            return {oMin.x, oMin.y, oMax.x, oMax.y};
+            return {oMin.x + min.x, oMin.y + min.y, oMax.x + min.x, oMax.y + min.y};
         }
 
+        /// @brief 遍历
+        /// @param func void(selfAndChildren)
         void traverse(std::function<void(const Clip&)> func) const
         {
             func(*this);
             for (const auto& c : mergedRects) c.traverse(func);
         }
 
+        /// @brief 遍历
+        /// @param func void(children, parent)
+        /// @param parent 父节点
+        void traverse(std::function<void(const Clip&, const Clip*)> func, const Clip* parent = &defaultClip) const
+        {
+            func(*this, parent);
+            for (const auto& c : mergedRects) c.traverse(func, this);
+        }
+
+        /// @brief 遍历孩子
+        /// @param func void(children)
         void traverseChild(std::function<void(const Clip&)> func) const
         {
             for (const auto& c : mergedRects) c.traverse(func);
+        }
+
+        /// @brief 遍历孩子
+        /// @param func void(children)
+        void traverseChild(std::function<void(const Clip&, const Clip*)> func) const
+        {
+            for (const auto& c : mergedRects) c.traverse(func, this);
         }
 
         bool test(glm::ivec2 pos) const
@@ -96,6 +114,8 @@ namespace CC
         glm::ivec2 min;
         glm::ivec2 size;
         std::list<Clip> mergedRects;
+
+        static const Clip defaultClip;
     };
 
     class ClipCtrl
@@ -140,7 +160,16 @@ namespace CC
                     }
                     break;
                 case Op::ChangeClip: // 链表第一个储存过去的数值, 链表最后一个储存全新的数值
-                    _inst->clips[data.dObjs.front().first] = data.dObjs.front().second;
+                    {
+                        size_t count = data.dObjs.size() >> 1;
+                        auto itr = data.dObjs.begin();
+                        while(count)
+                        {
+                            _inst->clips[itr->first] = itr->second;
+                            itr++;
+                            count--;
+                        }
+                    }
                     break;
                 case Op::SwapClip: // 仅储存交换双方的 id
                     {
@@ -163,6 +192,7 @@ namespace CC
                         while(itr != data.dObjs.cend())
                         {
                             _inst->clips[itr->first].empty = false;
+                            _inst->clips[itr->first].min += _inst->clips[data.dObjs.front().first].min;
                             _inst->clips[data.dObjs.front().first].mergedRects.pop_back();
                             itr++;
                         }
@@ -174,6 +204,8 @@ namespace CC
                         auto childCount = data.dObjs.back().first;
                         while(childCount)
                         {
+                            _inst->clips.back().min -= _inst->clips[idx].min;
+                            _inst->clips.back().empty = false;
                             _inst->clips[idx].mergedRects.push_back(_inst->clips.back());
                             _inst->clips.pop_back();
                             childCount--;
@@ -198,7 +230,16 @@ namespace CC
                         _inst->clips.emplace_back(i.second);
                     break;
                 case Op::ChangeClip:
-                    _inst->clips[data.dObjs.back().first] = data.dObjs.back().second;
+                    {
+                        size_t count = data.dObjs.size() >> 1;
+                        auto itr = --data.dObjs.end();
+                        while(count)
+                        {
+                            _inst->clips[itr->first] = itr->second;
+                            itr--;
+                            count--;
+                        }
+                    }
                     break;
                 case Op::SwapClip:
                     {
@@ -223,6 +264,7 @@ namespace CC
                         auto itr = ++data.dObjs.cbegin();
                         while(itr != data.dObjs.cend())
                         {
+                            _inst->clips[itr->first].min -= _inst->clips[data.dObjs.front().first].min;
                             _inst->clips[data.dObjs.front().first].mergedRects
                                 .emplace_back(_inst->clips[itr->first]);
                             _inst->clips[itr->first].empty = true;
@@ -236,6 +278,7 @@ namespace CC
                         auto childCount = data.dObjs.back().first;
                         while(childCount)
                         {
+                            _inst->clips[idx].mergedRects.back().min += _inst->clips[idx].min;
                             _inst->clips.emplace_back(_inst->clips[idx].mergedRects.back());
                             _inst->clips[idx].mergedRects.pop_back();
                             childCount--;
@@ -264,7 +307,7 @@ namespace CC
         static void swap(size_t a, size_t b);
         static void erase(const std::list<size_t>& idx);
         static void merge(const std::list<size_t>& idx);
-        static void set(size_t idx, const Clip& clip);
+        static void set(const std::list<std::pair<size_t, Clip>>& clips);
         static void devid(size_t idx);
         static void undo();
         static void redo();

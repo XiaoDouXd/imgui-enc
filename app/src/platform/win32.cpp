@@ -1,6 +1,6 @@
+#ifdef WIN32
 #include "univesal.h"
 
-#ifdef WIN32
 #include <SDL.h>
 #include <Windows.h>
 #include <SDL_syswm.h>

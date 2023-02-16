@@ -8,8 +8,8 @@
 
 #include "base/wndBase.hpp"
 #include "core/imgCtrl.h"
-#include "ctrlPanel.hpp"
-#include "picPanel.hpp"
+#include "clipCtrlPanel.hpp"
+#include "clipPicPanel.hpp"
 
 #include "staticPanelData.h"
 
@@ -27,7 +27,7 @@ namespace CC::UI
                 picPanelId = 0;
                 App::logInfo("CC::MainPanel log - Failure to add file\n");
             });
-            picPanelId = WndMgr::open<PicPanel>(data);
+            picPanelId = WndMgr::open<ClipPicPanel>(data);
         }
     }
 
@@ -198,11 +198,11 @@ namespace CC::UI
 
         void drawWinBtn()
         {
-            const ImGuiViewport* viewport = ImGui::GetMainViewport();
-            ImGui::SetNextWindowPos({viewport->WorkPos.x, viewport->WorkSize.y - 50.f});
-            ImGui::SetNextWindowViewport(viewport->ID);
-            ImGui::Begin("winBtnPanel", nullptr, btnPanelFlags);
-            ImGui::End();
+            // const ImGuiViewport* viewport = ImGui::GetMainViewport();
+            // ImGui::SetNextWindowPos({viewport->WorkPos.x, viewport->WorkSize.y - 50.f});
+            // ImGui::SetNextWindowViewport(viewport->ID);
+            // ImGui::Begin("winBtnPanel", nullptr, btnPanelFlags);
+            // ImGui::End();
         }
 
         // ---------------------------- 绑定事件
