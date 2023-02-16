@@ -4,6 +4,15 @@ project(rc)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 
+file (GLOB_RECURSE ALL_RC "./rc/*.in")
+if(WIN32)
+    foreach(rc_in ${ALL_RC})
+        file(RELATIVE_PATH rc_in_name "${CMAKE_CURRENT_SOURCE_DIR}/rc" ${rc_in})
+        string(REGEX REPLACE ".in$" "" rc_out ${rc_in_name})
+        configure_file(${rc_in} "${CMAKE_CURRENT_SOURCE_DIR}/gen/rc/${rc_out}")
+    endforeach()
+endif(WIN32)
+
 if(CC_RC_REGEN)
     # 需要生成嵌入的文件
     file (GLOB_RECURSE ALL_RES "./res/*")
@@ -74,7 +83,7 @@ if(CC_RC_REGEN)
     endforeach()
 endif(CC_RC_REGEN)
 
-file(GLOB_RECURSE GEN_RES_FILES "gen/*.cpp" "gen/*.c" "gen/*.h" "gen/*.hpp")
+file(GLOB_RECURSE GEN_RES_FILES "gen/*.cpp" "gen/*.c" "gen/*.h" "gen/*.hpp" "gen/*.rc")
 
 include_directories(${PROJECT_NAME} ./gen ./gen/include)
 add_library(${PROJECT_NAME} STATIC ${GEN_RES_FILES})

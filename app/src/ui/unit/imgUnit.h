@@ -70,7 +70,9 @@ namespace CC::UI
             }
             catch(const std::exception& e)
             {
+#ifndef NDEBUG 
                 std::cerr << e.what() << '\n';
+#endif
             }
             if (!_srcData) throw Exce(__LINE__, __FILE__, "ImgUnit: 读取图像文件错误");
             _srcDataSize = _w * _h * _channels;
