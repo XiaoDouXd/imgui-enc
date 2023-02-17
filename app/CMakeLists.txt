@@ -11,7 +11,11 @@ file(GLOB_RECURSE ALL_SOURCE "src/*.cpp" "src/*.c" "src/*.h" "src/*.hpp" "../3rd
 set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 include_directories(${PROJECT_NAME} ./src ./src/base ../3rd/rapidxml ../3rd/stb)
 add_executable(${PROJECT_NAME} ${ALL_SOURCE})
-target_sources(${PROJECT_NAME} PRIVATE ${ALL_RC})
+if(WIN32)
+    file(GLOB_RECURSE ALL_RC "rc/gen/rc/*.rc")
+    target_sources(${PROJECT_NAME} PRIVATE ${ALL_RC})
+endif(WIN32)
+
 
 # 控制台仅在 Debug 模式下生成
 if (${CMAKE_BUILD_TYPE} MATCHES ".*(D|d)(E|e)(B|b)(U|u)(G|g).*")

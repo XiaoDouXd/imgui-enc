@@ -2,6 +2,7 @@
 #include "app.h"
 
 #include <iostream>
+#include <fstream>
 #include <SDL3/SDL_image.h>
 
 #include "ccexce.h"
@@ -12,6 +13,7 @@
 #include "ui/base/wndMgr.h"
 
 #include "IMGS_CLIPTOOLICON_PNG.h"
+#include "CONF_CLIPTOOL_INI.h"
 
 
 namespace CC
@@ -268,6 +270,18 @@ namespace CC
     }
 }
 
+/// @brief 检查或创建配置文件
+void checkOrCreateConfFile()
+{
+    std::filesystem::path path = CC_CONF_FILE_NAME;
+    if (!std::filesystem::exists(path))
+    {
+        std::fstream f(path, std::ios_base::out | std::ios_base::binary);
+        f.write((const char *)CC::RC::CC_RC_CONF_CLIPTOOL_INI.data(), CC::RC::CC_RC_CONF_CLIPTOOL_INI.size());
+        f.close();
+    }
+}
+
 /// @brief 入口函数, 不要覆写该入口函数, 请用 init(int argc, char* argv[]) 和 quit() 函数进行初始化和销毁
 /// @param argc 参数数量
 /// @param argv 参数内容
@@ -276,6 +290,7 @@ int main(int argc, char* argv[])
 {
     try
     {
+        checkOrCreateConfFile();
         CC::__app_caller::init(CC_WINDOW_NAME);
 #ifndef CC_NO_PLATFORM_SPECIAL_INIT
         CC::platformSpecialInit();

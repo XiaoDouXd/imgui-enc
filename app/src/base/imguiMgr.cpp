@@ -1,4 +1,5 @@
 #include "ccexce.h"
+#include "entrance.h"
 #include "imgui_impl_sdl.h"
 #include "imguiMgr.h"
 #include "vulkanMgr.h"
@@ -25,7 +26,7 @@ namespace CC
         _inst->context = ImGui::CreateContext();
         ImGui::SetCurrentContext(_inst->context);
         _inst->io = &(ImGui::GetIO());
-        _inst->io->IniFilename = "clipTool.ini";
+        _inst->io->IniFilename = CC_CONF_FILE_NAME;
 
         _inst->wHandle.Surface = surf;
         auto res = VulkanMgr::getPhyDev().getSurfaceSupportKHR(VulkanMgr::getQueueFamily(), surf);
