@@ -130,10 +130,10 @@ namespace CC
 
         /// @brief 遍历并计算偏移量 (包括根节点)
         /// @param func void(tile)
-        void traverseWithOffset(std::function<void(const Tile&, const glm::ivec2&)> func, const glm::ivec2& parentOffset = {}) const
+        void traverseWithOffset(std::function<void(const Tile&, const glm::ivec2&)> func, const glm::ivec2& offset = {}) const
         {
-            func(*this, parentOffset);
-            for (auto& t : _children) t.traverseWithOffset(func, _pos + parentOffset);
+            func(*this, offset);
+            for (auto& t : _children) t.traverseWithOffset(func, _pos + offset);
         }
 
     private:

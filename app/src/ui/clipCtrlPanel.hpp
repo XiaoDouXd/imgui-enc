@@ -281,8 +281,8 @@ namespace CC::UI
             float sc = glm::max(aabb.z, aabb.w);
             if (sc <= 0.00000000001f) return;
 
-            ImgCtrl::draw(clip, [this, dl, minP, aabb, sc]
-                (ImTextureID id, glm::ivec2 p, glm::ivec2 s, glm::vec2 uvMin, glm::vec2 uvMax)
+            ImgCtrl::draw(clip, [this, dl, minP, sc]
+                (const ImTextureID& id, const glm::ivec2& p, const glm::ivec2& s, const glm::ivec2& uvMin, const glm::ivec2& uvMax)
             {
                 ImVec2 p0 = {minP.x + (p.x / sc) * 26 + 4, minP.y + (p.y / sc) * 26 + 4};
                 dl->AddImage(id, p0, {p0.x + (s.x / sc) * 26, p0.y + (s.y / sc) * 26},

@@ -51,24 +51,24 @@ namespace CC
         }
         static void draw(
             const Clip& clip,
-            std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc,
-            glm::ivec2 __pRoot,
-            glm::ivec2 __pLocal = glm::ivec2());
+            std::function<void(const ImTextureID&, const glm::ivec2&, const glm::ivec2&, const glm::vec2&, const glm::vec2&)> dFunc,
+            const glm::ivec2& __pRoot,
+            const glm::ivec2& __pLocal = glm::ivec2());
 
     public:
         static const PicData& front();
         static const PicData& back();
         static bool empty();
         static bool pushBack();
-        static void draw(std::function<void(ImTextureID, glm::ivec2, glm::ivec2)> dFunc);
+        static void draw(std::function<void(const ImTextureID&, const glm::ivec2&, const glm::ivec2&)> dFunc);
         /// @brief
         /// @param rect
         /// @param dFunc void(textureId, min, size, uv_min, uv_max)
-        static void draw(glm::ivec4 rect, std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc);
+        static void draw(glm::ivec4 rect, std::function<void(const ImTextureID&, const glm::ivec2&, const glm::ivec2&, const glm::vec2&, const glm::vec2&)> dFunc);
         /// @brief
         /// @param rect
         /// @param dFunc void(textureId, min, size, uv_min, uv_max)
-        static void draw(const Clip& clip, std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc);
+        static void draw(const Clip& clip, std::function<void(const ImTextureID&, const glm::ivec2&, const glm::ivec2&, const glm::vec2&, const glm::vec2&)> dFunc);
         static void popBack(bool recy = false);
         static void popFront();
         /// @brief

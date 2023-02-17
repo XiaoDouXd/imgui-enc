@@ -289,9 +289,10 @@ namespace CC::UI
                 {
                     if (!curSelectedClips[i] || i >= ClipCtrl::getCurClips().size()) continue;
                     _isSelectedEmpty = false;
-                    _changeFrameP0 = glm::min(ClipCtrl::getCurClips()[i].min, _changeFrameP0);
+                    auto aabb = ClipCtrl::getCurClips()[i].getAABB();
+                    _changeFrameP0 = glm::min(glm::ivec2(aabb.x, aabb.y), _changeFrameP0);
                     _changeFrameSize = glm::max(
-                        ClipCtrl::getCurClips()[i].min + ClipCtrl::getCurClips()[i].size,
+                        glm::ivec2(aabb.z, aabb.w),
                         _changeFrameSize);
                 }
                 if (!_isSelectedEmpty) _changeFrameSize -= _changeFrameP0;
@@ -338,7 +339,7 @@ namespace CC::UI
         /// @brief 绘制 image
         void drawImg()
         {
-            ImgCtrl::draw([this](ImTextureID id, glm::ivec2 pos, glm::ivec2 size){
+            ImgCtrl::draw([this](const ImTextureID& id, const glm::ivec2& pos, const glm::ivec2& size){
                 this->addPic(id, pos, size);
             });
         }
@@ -394,7 +395,7 @@ namespace CC::UI
             addRect(pos, size, IM_COL32_BLACK);
         }
 
-        void addImg(ImTextureID imgId, glm::ivec2 pos, glm::ivec2 size)
+        void addImg(const ImTextureID& imgId, const glm::ivec2& pos, const glm::ivec2& size)
         {
             _drawList->AddImage(imgId,
                 {_wPos.x + _p0.x + scale(pos.x), _wPos.y + _p0.y + scale(pos.y)},
@@ -406,19 +407,19 @@ namespace CC::UI
             const auto& clip = ClipCtrl::getCurClips()[idx];
 
             if (clip.empty) return;
-                clip.traverse([this, idx](const Clip& cClip, const Clip* pClip){
+                clip.traverseWithOffset([this, idx](const Clip& cClip, const glm::ivec2& pOffset){
                     if (idx == curHoveredClip)
-                            this->addRectFilled(cClip.min + pClip->min, cClip.size, ImColor(0.f, 1.f, 1.f, 0.4f));
+                            this->addRectFilled(cClip.min + pOffset, cClip.size, ImColor(0.f, 1.f, 1.f, 0.4f));
                     if (idx == curDragedClip)
-                        this->addRectFilled(cClip.min + pClip->min, cClip.size, ImColor(1.f, 0.f, 0.f, 0.2f));
+                        this->addRectFilled(cClip.min + pOffset, cClip.size, ImColor(1.f, 0.f, 0.f, 0.2f));
                     if ((idx < curSelectedClips.size() && curSelectedClips[idx]) ||
                         (idx < _selectedCache.size() && _selectedCache[idx]))
                     {
-                        this->addRect(cClip.min + pClip->min + this->_changeOffset, cClip.size, ImColor(1.f, 0.f, 0.f, 1.f));
-                        this->addRectFilled(cClip.min + pClip->min + this->_changeOffset, cClip.size, ImColor(1.f, 1.f, 0.f, 0.4f));
+                        this->addRect(cClip.min + pOffset + this->_changeOffset, cClip.size, ImColor(1.f, 0.f, 0.f, 1.f));
+                        this->addRectFilled(cClip.min + pOffset + this->_changeOffset, cClip.size, ImColor(1.f, 1.f, 0.f, 0.4f));
                     }
                     else
-                        this->addRect(cClip.min + pClip->min, cClip.size, ImColor(0.f, 0.f, 1.f, 1.f));
+                        this->addRect(cClip.min + pOffset, cClip.size, ImColor(0.f, 0.f, 1.f, 1.f));
                 });
         }
 

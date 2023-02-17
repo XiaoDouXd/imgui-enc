@@ -10,13 +10,13 @@ namespace CC
     const ImgCtrl::PicData& ImgCtrl::back() { return _inst->imgs.back(); }
     bool ImgCtrl::empty() { return _inst->imgs.empty(); }
 
-    void ImgCtrl::draw(std::function<void(ImTextureID, glm::ivec2, glm::ivec2)> dFunc)
+    void ImgCtrl::draw(std::function<void(const ImTextureID&, const glm::ivec2&, const glm::ivec2&)> dFunc)
     {
         for (const auto& i : _inst->imgs)
             dFunc(i.getId(), i.pos, i.getSize());
     }
 
-    void ImgCtrl::draw(glm::ivec4 rect, std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc)
+    void ImgCtrl::draw(glm::ivec4 rect, std::function<void(const ImTextureID&, const glm::ivec2&, const glm::ivec2&, const glm::vec2&, const glm::vec2&)> dFunc)
     {
         // --------------------------------------------
         //        |rect |img  |rect  |img  |
@@ -43,14 +43,14 @@ namespace CC
 
     void ImgCtrl::draw(
         const Clip& clip,
-        std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc)
+        std::function<void(const ImTextureID&, const glm::ivec2&, const glm::ivec2&, const glm::vec2&, const glm::vec2&)> dFunc)
     { draw(clip, dFunc, clip.min); }
 
     void ImgCtrl::draw(
         const Clip& clip,
-        std::function<void(ImTextureID, glm::ivec2, glm::ivec2, glm::vec2, glm::vec2)> dFunc,
-        glm::ivec2 __pRoot,
-        glm::ivec2 __pLocal)
+        std::function<void(const ImTextureID&, const glm::ivec2&, const glm::ivec2&, const glm::vec2&, const glm::vec2&)> dFunc,
+        const glm::ivec2& __pRoot,
+        const glm::ivec2& __pLocal)
     {
         if (clip.empty) return;
         // --------------------------------------------

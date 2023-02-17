@@ -90,6 +90,14 @@ namespace CC
             for (const auto& c : mergedRects) c.traverse(func, this);
         }
 
+        /// @brief 遍历
+        /// @param func void(selfAndChildren)
+        void traverseWithOffset(std::function<void(const Clip&, const glm::ivec2&)> func, const glm::ivec2& offset = {}) const
+        {
+            func(*this, offset);
+            for (const auto& c : mergedRects) c.traverseWithOffset(func, offset + min);
+        }
+
         bool test(glm::ivec2 pos) const
         {
             if (pos.x >= min.x && pos.y >= min.y &&
