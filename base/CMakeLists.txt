@@ -13,13 +13,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC ./include)
 target_include_directories(${PROJECT_NAME} PRIVATE ./src)
 target_include_directories(${PROJECT_NAME} PRIVATE ./src/core)
 
-if(WIN32)
-    file(GLOB_RECURSE ALL_RC "rc/gen/rc/*.rc")
-    if(EXISTS ALL_RC)
-        target_sources(${PROJECT_NAME} PRIVATE ${ALL_RC})
-    endif()
-endif(WIN32)
-
 # 控制台仅在 Debug 模式下生成
 if (${CMAKE_BUILD_TYPE} MATCHES ".*(D|d)(E|e)(B|b)(U|u)(G|g).*")
     message(STATUS "${PROJECT_NAME}::CMakeLists.txt::info: 将编译带有控制台的目标程序")
