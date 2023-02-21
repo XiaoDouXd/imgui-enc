@@ -4,7 +4,7 @@
 #include <exception>
 #include <string>
 
-namespace CC
+namespace XD
 {
     /// @brief 统一的异常处理类
     class Exce : public std::exception

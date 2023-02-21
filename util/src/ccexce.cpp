@@ -3,7 +3,7 @@
 #include <iostream>
 #include "ccexce.h"
 
-namespace CC
+namespace XD
 {
     Exce::Exce(int line, const char* file, const char* info) noexcept
         : _line(line), _file(file), _info(info) {}
