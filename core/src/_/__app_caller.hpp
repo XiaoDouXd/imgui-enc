@@ -1,3 +1,5 @@
+#pragma once
+
 #include "app.h"
 
 namespace XD
