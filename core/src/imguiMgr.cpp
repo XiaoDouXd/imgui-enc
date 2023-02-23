@@ -185,12 +185,12 @@ namespace XD
         ImFontGlyphRangesBuilder builder;
 
         builder.AddRanges(io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
-        builder.AddText((const char*)XD::RC::XD_RC_RES_FONTS_______________________UCC8105___1_0X00_.data());
+        builder.AddText((const char*)XD::RC::XD_IN_RC_RES_FONTS_______________________UCC8105___1_0X00_.data());
         builder.BuildRanges(&ranges);
 
         io.Fonts->AddFontFromMemoryTTF(
-            (void*)XD::RC::XD_RC_RES_FONTS_SOURCEHANSANSCN_NORMAL_OTF.data(),
-            XD::RC::XD_RC_RES_FONTS_SOURCEHANSANSCN_NORMAL_OTF.size(),
+            (void*)XD::RC::XD_IN_RC_RES_FONTS_SOURCEHANSANSCN_NORMAL_OTF.data(),
+            XD::RC::XD_IN_RC_RES_FONTS_SOURCEHANSANSCN_NORMAL_OTF.size(),
             32.0f,
             &fontConfig,
             ranges.Data);

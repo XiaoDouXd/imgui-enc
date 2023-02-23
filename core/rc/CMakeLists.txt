@@ -5,13 +5,13 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 
 file(GLOB_RECURSE ALL_RES "./res/*")
-if(DEFINED RC_PATH AND EXISTS "../../${RC_PATH}")
-    set(__RC_PATH_REAL "../../${RC_PATH}")
+if(DEFINED XD_RC_PATH AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../../${XD_RC_PATH}")
+    set(__RC_PATH_REAL "../../${XD_RC_PATH}")
     get_filename_component(__RC_PATH_REAL_FULLPATH "${__RC_PATH_REAL}" REALPATH BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../")
-    if(WIN32 AND DEFINED RC_WINDRES_PATH AND EXISTS "../../${RC_WINDRES_PATH}")
-        set(RC_WINDRES_PATH "../../${RC_WINDRES_PATH}")
-        get_filename_component(__RC_WINDRES_PATH_REAL_FULLPATH "${RC_WINDRES_PATH}" REALPATH BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../")
-        file (GLOB_RECURSE ALL_RC "../${RC_WINDRES_PATH}/*.rc.in")
+    if(WIN32 AND DEFINED XD_RC_WINDRES_PATH AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../../${XD_RC_WINDRES_PATH}")
+        set(XD_RC_WINDRES_PATH "../../${XD_RC_WINDRES_PATH}")
+        get_filename_component(__RC_WINDRES_PATH_REAL_FULLPATH "${XD_RC_WINDRES_PATH}" REALPATH BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../")
+        file (GLOB_RECURSE ALL_RC "../${XD_RC_WINDRES_PATH}/*.rc.in")
         foreach(rc_in ${ALL_RC})
             file(RELATIVE_PATH rc_in_name "${__RC_WINDRES_PATH_REAL_FULLPATH}" ${rc_in})
             string(REGEX REPLACE ".in$" "" rc_out ${rc_in_name})
@@ -62,12 +62,12 @@ if(XD_RC_REGEN)
         "#pragma once\n\n"
         "#include <array>\n#include <cstdint>\n\n"
         "namespace XD::RC {\n"
-        "    extern const std::array<uint8_t, ${res_file_size}> XD_RC_${token};\n"
+        "    extern const std::array<uint8_t, ${res_file_size}> XD_IN_RC_${token};\n"
         "}")
         file(APPEND ${gen_res_file}
             "#include \"xdres/${token}.h\"\n\n"
             "namespace XD::RC {\n"
-            "    const std::array<uint8_t, ${res_file_size}> XD_RC_${token} = {\n       ")
+            "    const std::array<uint8_t, ${res_file_size}> XD_IN_RC_${token} = {\n       ")
 
         # 读取十六进制数据
         file(READ ${input_src} file_data HEX)

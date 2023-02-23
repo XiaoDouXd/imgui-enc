@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
-project(appBase)
+get_filename_component(XD_PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+string(REPLACE " " "_" XD_PROJECT_NAME ${XD_PROJECT_NAME})
+project(${XD_PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
@@ -16,6 +18,7 @@ file(GLOB_RECURSE ALL_SOURCE "core/src/*.cpp" "core/src/*.c" "core/src/*.h" "cor
 
 add_library(${PROJECT_NAME} ${ALL_SOURCE})
 target_include_directories(${PROJECT_NAME} PUBLIC ./core/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ./core/include/xdBase)
 target_include_directories(${PROJECT_NAME} PRIVATE ./core/src)
 target_include_directories(${PROJECT_NAME} PRIVATE ./core/src/core)
 
