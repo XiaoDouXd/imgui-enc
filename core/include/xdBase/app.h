@@ -30,6 +30,7 @@ namespace XD::App {
         ResizeWindow = 0,
     };
 
+    /// @brief loopLayer def
     enum class LoopLayer : uint8_t {
         First = 0,
         Second = 1,
@@ -42,9 +43,15 @@ namespace XD::App {
 
     class LoopUnit {
     protected:
+        /// @brief the basic unit of loop
+        /// @param layer updated first of others layer number is bigger
         explicit LoopUnit(LoopLayer layer = LoopLayer::First);
         virtual ~LoopUnit();
+
+        /// @brief called while instance created first
         virtual void start() = 0;
+
+        /// @brief called every frame
         virtual void update() = 0;
 
     private:
@@ -56,9 +63,10 @@ namespace XD::App {
         const std::list<LoopUnit *>::const_iterator _selfApp;
     };
 
-    /// @brief 空类
+    /// @brief empty class
     class Default {};
 
+    /// @brief loc env
     extern const std::locale loc;
 }
 
@@ -71,43 +79,39 @@ namespace XD::App {
     };
 
     // -----------------------------------------------------------------------------------------
-    // 外调接口
+    // interface
 
-    /// @brief 窗口宽
-    /// @return 宽
+    /// @brief window width
     int getW();
 
-    /// @brief 窗口高
-    /// @return 高
+    /// @brief window height
     int getH();
 
-    /// @brief 获取事件状态
-    /// @param switchType 目标事件
-    /// @return 事件状态 (未设置的事件状态为 UINT8_MAX)
+    /// @brief get event states
+    /// @param switchType target event
+    /// @return event state (return UINT8_MAX while event is not set)
     uint8_t getEventSwitch(const EventSwitch& switchType);
 
-    /// @brief 获得窗口句柄
-    /// @return 窗口句柄
+    /// @brief get sdl wnd handle
     SDL_Window* getWHandle();
 
-    /// @brief 获取程序开始时间点
-    /// @return 程序开始时间点
+    /// @brief get program start time
     const clock_t& getStartTimePoint();
 
-    /// @brief 设置事件状态
-    /// @param switchType 目标事件
-    /// @param state 要设置的状态
+    /// @brief set event states
+    /// @param switchType target event
+    /// @param state state to set
     void setEventSwitch(const EventSwitch& switchType, const uint8_t& state);
 
-    /// @brief 设置背景颜色
-    /// @param color 要设置的颜色
+    /// @brief set bg color
+    /// @param color color
     void setBGColor(const ImVec4& color);
 
-    /// @brief 退出程序
+    /// @brief quit
     void quit();
 
-    /// @brief 各种事件状态
-    /// @return 事件状态总类
+    /// @brief get all events
+    /// @return the event states data class of
     const WndEventData& event();
 
     // -----------------------------------------------------------------------------------------

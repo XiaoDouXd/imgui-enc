@@ -1,7 +1,6 @@
 #include "entrance.h"
 
-namespace XD
-{
+namespace XD {
     const uint8_t* xdWndInitConf_iconPngData = nullptr;
     size_t xdWndInitConf_iconPngSize = 0;
     const char* xdWndInitConf_wndName = "xdWnd";

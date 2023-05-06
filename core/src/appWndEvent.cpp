@@ -1,8 +1,7 @@
 #include "entrance.h"
 #include "p_app.h"
 
-namespace XD
-{
+namespace XD {
     const std::locale loc = std::locale();
 
     enum class PosEdgeType : uint8_t { NotEdge = 0, LU = 5, LM = 4, LD = 8, MU = 1, MD = 3, RU = 6, RM = 2, RD = 7 };
@@ -22,8 +21,7 @@ namespace XD
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "UnreachableCallsOfFunction"
-    static inline PosEdgeType atEdge(const float& x, const float& y, const float& rw, const float& rh)
-    {
+    static inline PosEdgeType atEdge(const float& x, const float& y, const float& rw, const float& rh) {
         static const float deviation = 8.0f;
         static float dw, dh;
         dw = rw - deviation;
@@ -50,18 +48,15 @@ namespace XD
     }
 #pragma clang diagnostic pop
 
-    static void checkMouseEvent(const uint8_t& mouseKey /*mouseKey: 0-左键 1-中键 2-右键*/)
-    {
+    static void checkMouseEvent(const uint8_t& mouseKey /*mouseKey: 0-左键 1-中键 2-右键*/) {
         // ------------------------------------------
         // 按下鼠标键
-        if (ImguiMgr::getIO().MouseDown[mouseKey] && !mouseDownStatePrev[mouseKey])
-        {
+        if (ImguiMgr::getIO().MouseDown[mouseKey] && !mouseDownStatePrev[mouseKey]) {
             mouseDownTime[mouseKey]        = TimeMgr::now();
             mouseDownStatePrev[mouseKey]   = true;
             StaticEventMgr::broadcastAsync<StaticEvent::OnMouseDown>(mouseKey);
         }
-        if (!ImguiMgr::getIO().MouseDown[mouseKey] && mouseDownStatePrev[mouseKey])
-        {
+        if (!ImguiMgr::getIO().MouseDown[mouseKey] && mouseDownStatePrev[mouseKey]) {
             mouseDownTime[mouseKey]        = TimeMgr::now() - mouseDownTime[mouseKey];
             mouseDownStatePrev[mouseKey]   = false;
             StaticEventMgr::broadcastAsync<StaticEvent::OnMouseUp>(mouseKey);
@@ -76,18 +71,15 @@ namespace XD
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
-    static void resizeWindowCursor()
-    {
+    static void resizeWindowCursor() {
         SDL_GetWindowBordersSize(App::getWHandle(), &wBTop, &wBLeft, &wBBottom, &wBRight);
-        if (App::getEventSwitch(App::EventSwitch::ResizeWindow))
-        {
+        if (App::getEventSwitch(App::EventSwitch::ResizeWindow)) {
             static ImVec2 mPos;
             mPos = ImGui::GetMousePos();
             mousePosType = atEdge(mPos.x + (float)wBLeft, mPos.y + (float)wBTop,
-                                  (float)App::getW() + (float)wBRight + (float)wBLeft,
-                                  (float)App::getH() + (float)wBBottom + (float)wBTop);
-            switch (mousePosType)
-            {
+                (float)App::getW() + (float)wBRight + (float)wBLeft,
+                (float)App::getH() + (float)wBBottom + (float)wBTop);
+            switch (mousePosType) {
             case PosEdgeType::MD:
             case PosEdgeType::MU: ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS); break;
             case PosEdgeType::LM:
@@ -105,40 +97,34 @@ namespace XD
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
-    static void resizeWindow()
-    {
+    static void resizeWindow() {
 #define CC_LIMIT_W_HEIGHT(x) std::max(x, (float)xdWndInitConf_loadingHeight)
 #define CC_LIMIT_W_WIDTH(x)  std::max(x, (float)xdWndInitConf_loadingWidth)
         if (!App::getEventSwitch(App::EventSwitch::ResizeWindow)) return;
         auto& io = ImguiMgr::getIO();
         static bool lock = false;
 
-        if (mousePosType == PosEdgeType::NotEdge && mousePullFrom == PosEdgeType::NotEdge)
-        {
+        if (mousePosType == PosEdgeType::NotEdge && mousePullFrom == PosEdgeType::NotEdge) {
             if (io.MouseDown[ImGuiMouseButton_Left]) lock = true;
             else lock = false;
         }
         if (lock) return;
 
-        if (mousePosType == PosEdgeType::LU || mousePullFrom == PosEdgeType::LU)
-        {
-            if (io.MouseDown[ImGuiMouseButton_Left])
-            {
+        if (mousePosType == PosEdgeType::LU || mousePullFrom == PosEdgeType::LU) {
+            if (io.MouseDown[ImGuiMouseButton_Left]) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNWSE);
-                if (mousePullFrom != PosEdgeType::LU)
-                {
+                if (mousePullFrom != PosEdgeType::LU) {
                     mousePullFrom = PosEdgeType::LU;
                     SDL_GetGlobalMouseState(&mPosXPrev, &mPosYPrev);
                 }
-                else
-                {
+                else {
                     SDL_GetGlobalMouseState(&mPosX, &mPosY);
                     SDL_GetWindowPosition(App::getWHandle(), &wPosX, &wPosY);
                     SDL_SetWindowPosition(App::getWHandle(),
-                                          (float)wSizeW - mPosX + mPosXPrev <= (float)xdWndInitConf_loadingWidth
-                                          ? wPosX : wPosX + (int)mPosX - (int)mPosXPrev,
-                                          (float)wSizeH - mPosY + mPosYPrev <= (float)xdWndInitConf_loadingHeight
-                                          ? wPosY : wPosY + (int)mPosY - (int)mPosYPrev);
+                        (float)wSizeW - mPosX + mPosXPrev <= (float)xdWndInitConf_loadingWidth
+                        ? wPosX : wPosX + (int)mPosX - (int)mPosXPrev,
+                        (float)wSizeH - mPosY + mPosYPrev <= (float)xdWndInitConf_loadingHeight
+                        ? wPosY : wPosY + (int)mPosY - (int)mPosYPrev);
                     SDL_GetWindowSize(App::getWHandle(), &wSizeW, &wSizeH);
                     SDL_SetWindowSize(App::getWHandle(),
                         CC_LIMIT_W_WIDTH(wSizeW - mPosX + mPosXPrev),
@@ -149,31 +135,26 @@ namespace XD
                     StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
-            else if (mousePullFrom == PosEdgeType::LU)
-            {
+            else if (mousePullFrom == PosEdgeType::LU) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 App::eventData().isWindowResizing = false;
                 StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
-        else if (mousePosType == PosEdgeType::LD || mousePullFrom == PosEdgeType::LD)
-        {
-            if (io.MouseDown[ImGuiMouseButton_Left])
-            {
+        else if (mousePosType == PosEdgeType::LD || mousePullFrom == PosEdgeType::LD) {
+            if (io.MouseDown[ImGuiMouseButton_Left]) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNESW);
-                if (mousePullFrom != PosEdgeType::LD)
-                {
+                if (mousePullFrom != PosEdgeType::LD) {
                     mousePullFrom = PosEdgeType::LD;
                     SDL_GetGlobalMouseState(&mPosXPrev, &mPosYPrev);
                 }
-                else
-                {
+                else {
                     SDL_GetGlobalMouseState(&mPosX, &mPosY);
                     SDL_GetWindowPosition(App::getWHandle(), &wPosX, &wPosY);
                     SDL_SetWindowPosition(App::getWHandle(),
-                                          (float)wSizeW - mPosX + mPosXPrev <= (float)xdWndInitConf_loadingWidth
-                                          ? wPosX : wPosX + (int)mPosX - (int)mPosXPrev,
+                        (float)wSizeW - mPosX + mPosXPrev <= (float)xdWndInitConf_loadingWidth
+                        ? wPosX : wPosX + (int)mPosX - (int)mPosXPrev,
                         wPosY);
                     SDL_GetWindowSize(App::getWHandle(), &wSizeW, &wSizeH);
                     SDL_SetWindowSize(App::getWHandle(),
@@ -185,26 +166,21 @@ namespace XD
                     StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
-            else if (mousePullFrom == PosEdgeType::LD)
-            {
+            else if (mousePullFrom == PosEdgeType::LD) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 App::eventData().isWindowResizing = false;
                 StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
-        else if (mousePosType == PosEdgeType::RU || mousePullFrom == PosEdgeType::RU)
-        {
-            if (io.MouseDown[ImGuiMouseButton_Left])
-            {
+        else if (mousePosType == PosEdgeType::RU || mousePullFrom == PosEdgeType::RU) {
+            if (io.MouseDown[ImGuiMouseButton_Left]) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNESW);
-                if (mousePullFrom != PosEdgeType::RU)
-                {
+                if (mousePullFrom != PosEdgeType::RU) {
                     mousePullFrom = PosEdgeType::RU;
                     SDL_GetGlobalMouseState(&mPosXPrev, &mPosYPrev);
                 }
-                else
-                {
+                else {
                     SDL_GetGlobalMouseState(&mPosX, &mPosY);
                     SDL_GetWindowPosition(App::getWHandle(), &wPosX, &wPosY);
                     SDL_SetWindowPosition(App::getWHandle(),
@@ -221,26 +197,21 @@ namespace XD
                     StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
-            else if (mousePullFrom == PosEdgeType::RU)
-            {
+            else if (mousePullFrom == PosEdgeType::RU) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 App::eventData().isWindowResizing = false;
                 StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
-        else if (mousePosType == PosEdgeType::RD || mousePullFrom == PosEdgeType::RD)
-        {
-            if (io.MouseDown[ImGuiMouseButton_Left])
-            {
+        else if (mousePosType == PosEdgeType::RD || mousePullFrom == PosEdgeType::RD) {
+            if (io.MouseDown[ImGuiMouseButton_Left]) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNWSE);
-                if (mousePullFrom != PosEdgeType::RD)
-                {
+                if (mousePullFrom != PosEdgeType::RD) {
                     mousePullFrom = PosEdgeType::RD;
                     SDL_GetGlobalMouseState(&mPosXPrev, &mPosYPrev);
                 }
-                else
-                {
+                else {
                     SDL_GetGlobalMouseState(&mPosX, &mPosY);
                     SDL_GetWindowSize(App::getWHandle(), &wSizeW, &wSizeH);
                     SDL_SetWindowSize(App::getWHandle(),
@@ -252,31 +223,26 @@ namespace XD
                     StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
-            else if (mousePullFrom == PosEdgeType::RD)
-            {
+            else if (mousePullFrom == PosEdgeType::RD) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 App::eventData().isWindowResizing = false;
                 StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
-        else if (mousePosType == PosEdgeType::LM || mousePullFrom == PosEdgeType::LM)
-        {
-            if (io.MouseDown[ImGuiMouseButton_Left])
-            {
+        else if (mousePosType == PosEdgeType::LM || mousePullFrom == PosEdgeType::LM) {
+            if (io.MouseDown[ImGuiMouseButton_Left]) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
-                if (mousePullFrom != PosEdgeType::LM)
-                {
+                if (mousePullFrom != PosEdgeType::LM) {
                     mousePullFrom = PosEdgeType::LM;
                     SDL_GetGlobalMouseState(&mPosXPrev, &mPosYPrev);
                 }
-                else
-                {
+                else {
                     SDL_GetGlobalMouseState(&mPosX, &mPosY);
                     SDL_GetWindowPosition(App::getWHandle(), &wPosX, &wPosY);
                     SDL_SetWindowPosition(App::getWHandle(),
-                                          (float)wSizeW - mPosX + mPosXPrev <= (float)xdWndInitConf_loadingWidth
-                                          ? wPosX : wPosX + (int)mPosX - (int)mPosXPrev,
+                        (float)wSizeW - mPosX + mPosXPrev <= (float)xdWndInitConf_loadingWidth
+                        ? wPosX : wPosX + (int)mPosX - (int)mPosXPrev,
                         wPosY);
                     SDL_GetWindowSize(App::getWHandle(), &wSizeW, &wSizeH);
                     SDL_SetWindowSize(App::getWHandle(),
@@ -288,26 +254,21 @@ namespace XD
                     StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
-            else if (mousePullFrom == PosEdgeType::LM)
-            {
+            else if (mousePullFrom == PosEdgeType::LM) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 App::eventData().isWindowResizing = false;
                 StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
-        else if (mousePosType == PosEdgeType::MU || mousePullFrom == PosEdgeType::MU)
-        {
-            if (io.MouseDown[ImGuiMouseButton_Left])
-            {
+        else if (mousePosType == PosEdgeType::MU || mousePullFrom == PosEdgeType::MU) {
+            if (io.MouseDown[ImGuiMouseButton_Left]) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
-                if (mousePullFrom != PosEdgeType::MU)
-                {
+                if (mousePullFrom != PosEdgeType::MU) {
                     mousePullFrom = PosEdgeType::MU;
                     SDL_GetGlobalMouseState(&mPosXPrev, &mPosYPrev);
                 }
-                else
-                {
+                else {
                     SDL_GetGlobalMouseState(&mPosX, &mPosY);
                     SDL_GetWindowPosition(App::getWHandle(), &wPosX, &wPosY);
                     SDL_SetWindowPosition(App::getWHandle(),
@@ -324,26 +285,21 @@ namespace XD
                     StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
-            else if (mousePullFrom == PosEdgeType::MU)
-            {
+            else if (mousePullFrom == PosEdgeType::MU) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 App::eventData().isWindowResizing = false;
                 StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
-        else if (mousePosType == PosEdgeType::RM || mousePullFrom == PosEdgeType::RM)
-        {
-            if (io.MouseDown[ImGuiMouseButton_Left])
-            {
+        else if (mousePosType == PosEdgeType::RM || mousePullFrom == PosEdgeType::RM) {
+            if (io.MouseDown[ImGuiMouseButton_Left]) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
-                if (mousePullFrom != PosEdgeType::RM)
-                {
+                if (mousePullFrom != PosEdgeType::RM) {
                     mousePullFrom = PosEdgeType::RM;
                     SDL_GetGlobalMouseState(&mPosXPrev, &mPosYPrev);
                 }
-                else
-                {
+                else {
                     SDL_GetGlobalMouseState(&mPosX, &mPosY);
                     SDL_GetWindowSize(App::getWHandle(), &wSizeW, &wSizeH);
                     SDL_SetWindowSize(App::getWHandle(),
@@ -355,26 +311,21 @@ namespace XD
                     StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
-            else if (mousePullFrom == PosEdgeType::RM)
-            {
+            else if (mousePullFrom == PosEdgeType::RM) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 App::eventData().isWindowResizing = false;
                 StaticEventMgr::broadcast<StaticEvent::OnWindowResizeEnd>();
             }
         }
-        else if (mousePosType == PosEdgeType::MD || mousePullFrom == PosEdgeType::MD)
-        {
-            if (io.MouseDown[ImGuiMouseButton_Left])
-            {
+        else if (mousePosType == PosEdgeType::MD || mousePullFrom == PosEdgeType::MD) {
+            if (io.MouseDown[ImGuiMouseButton_Left]) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
-                if (mousePullFrom != PosEdgeType::MD)
-                {
+                if (mousePullFrom != PosEdgeType::MD) {
                     mousePullFrom = PosEdgeType::MD;
                     SDL_GetGlobalMouseState(&mPosXPrev, &mPosYPrev);
                 }
-                else
-                {
+                else {
                     SDL_GetGlobalMouseState(&mPosX, &mPosY);
                     SDL_GetWindowSize(App::getWHandle(), &wSizeW, &wSizeH);
                     SDL_SetWindowSize(App::getWHandle(),
@@ -386,8 +337,7 @@ namespace XD
                     StaticEventMgr::broadcast<StaticEvent::OnWindowResizeBegin>();
                 }
             }
-            else if (mousePullFrom == PosEdgeType::MD)
-            {
+            else if (mousePullFrom == PosEdgeType::MD) {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
                 mousePullFrom = PosEdgeType::NotEdge;
                 App::eventData().isWindowResizing = false;
@@ -400,33 +350,28 @@ namespace XD
     }
 #pragma clang diagnostic pop
 
-    static void moveWindow()
-    {
+    static void moveWindow() {
         auto& io = ImguiMgr::getIO();
-        if (io.MouseDown[ImGuiMouseButton_Middle] || io.MouseDown[ImGuiMouseButton_Right])
-        {
+        if (io.MouseDown[ImGuiMouseButton_Middle] || io.MouseDown[ImGuiMouseButton_Right]) {
             static float mPosXPrev, mPosYPrev;
             static int wPosX, wPosY;
             static float mPosX, mPosY;
-            if (!wMove)
-            {
+            if (!wMove) {
                 SDL_GetGlobalMouseState(&mPosXPrev, &mPosYPrev);
                 App::eventData().isWindowMoving = wMove = true;
             }
-            else
-            {
+            else {
                 SDL_GetGlobalMouseState(&mPosX, &mPosY);
                 SDL_GetWindowPosition(App::getWHandle(), &wPosX, &wPosY);
                 SDL_SetWindowPosition(App::getWHandle(),
-                                      wPosX + (int)mPosX - (int)mPosXPrev, wPosY + (int)mPosY - (int)mPosYPrev);
+                    wPosX + (int)mPosX - (int)mPosXPrev, wPosY + (int)mPosY - (int)mPosYPrev);
                 mPosXPrev = mPosX; mPosYPrev = mPosY;
             }
         }
         else App::eventData().isWindowMoving = wMove = false;
     }
 
-    static void mouseCheck()
-    {
+    static void mouseCheck() {
         checkMouseEvent(0);
         checkMouseEvent(1);
         checkMouseEvent(2);
@@ -436,10 +381,8 @@ namespace XD
             StaticEventMgr::broadcastAsync<StaticEvent::OnMouseMove>();
     }
 
-    static void dropFile(const SDL_Event& event)
-    {
-        if (event.type == SDL_DROPFILE)
-        {
+    static void dropFile(const SDL_Event& event) {
+        if (event.type == SDL_DROPFILE) {
             if (!event.drop.file || !*event.drop.file) return;
 
             using namespace std::filesystem;
@@ -450,12 +393,9 @@ namespace XD
         }
     }
 
-    static void shortcut(const SDL_Event& event)
-    {
-        if (event.type == SDL_KEYDOWN && !event.key.repeat)
-        {
-            for (size_t i = 0; i < ShortcutMap.size(); i++)
-            {
+    static void shortcut(const SDL_Event& event) {
+        if (event.type == SDL_KEYDOWN && !event.key.repeat) {
+            for (size_t i = 0; i < ShortcutMap.size(); i++) {
                 if (!isHit(ShortcutMap[i],
                     (SDL_KeyCode)event.key.keysym.sym,
                     (SDL_Keymod)event.key.keysym.mod)) continue;
@@ -467,22 +407,19 @@ namespace XD
     // -----------------------------------------------------------------------------------------
 
     /// @brief 事件处理数据初始化
-    void App::checkInit()
-    {
+    void App::checkInit() {
         SDL_GetGlobalMouseState(&mPosXPrev, &mPosYPrev);
     }
 
     /// @brief 每帧检测的事件处理核心
-    void App::checkFrame()
-    {
+    void App::checkFrame() {
         // resizeWindowCursor();
         mouseCheck();
     }
 
     /// @brief 事件处理核心
     /// @param event 事件在处理
-    void App::checkEvent(const SDL_Event& event)
-    {
+    void App::checkEvent(const SDL_Event& event) {
         // resizeWindow();
         moveWindow();
         dropFile(event);

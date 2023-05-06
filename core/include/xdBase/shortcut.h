@@ -4,7 +4,7 @@
 #include <SDL.h>
 
 namespace XD {
-    /// @brief 快捷键
+    /// @brief hotkey define
     enum class Shortcut : size_t {
         Undo = 0,
         Redo,

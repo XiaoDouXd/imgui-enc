@@ -18,7 +18,9 @@
 
 namespace XD
 {
-    /// @brief 事件类型基类
+    /// @brief base class of event
+    /// @tparam EType event type which is inherit this class
+    /// @tparam ArgTypes the params of event callback
     template<class EType, typename... ArgTypes>
     class EventTypeBase
     {
@@ -73,11 +75,11 @@ namespace XD
         static std::unique_ptr<EventMgrData> _inst;
 
     public:
-        /// @brief 注册事件 每个 obj 只能注册一次相同事件 多余的注册会被略过
-        /// @tparam EType 注册的事件类型
-        /// @param obj 监听器的 id (一般用对象内存地址描述)
-        /// @param cb 事件的回调
-        /// @return 注册到事件的哈希值包 (可以使用这个哈希值注销事件)
+        /// @brief register event
+        /// @tparam EType event type
+        /// @param obj obj uuid
+        /// @param cb callback of event
+        /// @return the event inst of register action (you can unregister specific event using this)
         template<class EType>
         requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
         static std::optional<std::size_t> registerEvent(uuids::uuid obj, typename EType::_cc_fType cb) {
@@ -95,9 +97,10 @@ namespace XD
             return std::make_optional<std::size_t>(hashCode);
         }
 
-        /// @brief 注销事件
-        /// @tparam EType 注销的事件类型
-        /// @param obj 监听器的 id (一般用对象内存地址描述)
+        /// @brief unregister,
+        /// this function would unregister all event registered by this obj uuid
+        /// @tparam EType event type
+        /// @param obj obj uuid
         template<class EType>
         requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
         static std::optional<std::size_t> unregisterEvent(const uuids::uuid& obj) {
@@ -118,18 +121,18 @@ namespace XD
             return std::make_optional<std::size_t>(hashCode);
         }
 
-        /// @brief 注销事件
-        /// @param hashCode 事件的哈希值
-        /// @param obj 监听器的 id (一般用对象内存地址描述)
+        /// @brief unregister event
+        /// @param hashCode event register action
+        /// @param obj obj uuid
         static void unregisterEvent(const std::size_t& hashCode, uuids::uuid obj);
 
-        /// @brief 注销事件
-        /// @param hashCodeOpt 事件的哈希值包
-        /// @param obj 监听器的 id (一般用对象内存地址描述)
+        /// @brief unregister event
+        /// @param hashCodeOpt event register action
+        /// @param obj obj uuid
         static void unregisterEvent(const std::optional<std::size_t>& hashCodeOpt, uuids::uuid obj);
 
-        /// @brief 某事件的所有监听
-        /// @tparam EType 事件类型
+        /// @brief clear all listener of this event
+        /// @tparam EType event type
         template<class EType>
         requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
         static void clearEvent() {
@@ -145,10 +148,10 @@ namespace XD
             eDic.erase(hashCode);
         }
 
-        /// @brief 广播
-        /// @tparam EType 事件类型
-        /// @tparam ...ArgTypes 参数包 (定义事件类型时所指定的参数)
-        /// @param ...args 要传递参数
+        /// @brief broadcast
+        /// @tparam EType event type
+        /// @tparam ...ArgTypes param package
+        /// @param ...args callback params
         template<class EType, typename... ArgTypes>
         requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
         && std::is_same<typename EType::_cc_fType, std::function<void(ArgTypes...)>>::value
@@ -163,10 +166,10 @@ namespace XD
             }
         }
 
-        /// @brief 异步地广播
-        /// @tparam EType 事件类型
-        /// @tparam ...ArgTypes 参数包 (定义事件类型时所指定的参数)
-        /// @param ...args 要传递的参数
+        /// @brief broadcast async
+        /// @tparam EType event type
+        /// @tparam ...ArgTypes param package
+        /// @param ...args callback params
         template<class EType, typename... ArgTypes>
         requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
         && std::is_same<typename EType::_cc_fType, std::function<void(ArgTypes...)>>::value
@@ -187,13 +190,13 @@ namespace XD
 
     public:
 
-        /// @brief 初始化
+        /// @brief init
         static void init();
 
-        /// @brief 刷新帧
+        /// @brief update a frame
         static void update();
 
-        /// @brief 销毁
+        /// @brief destroy static event mgr
         static void destroy();
     };
 }

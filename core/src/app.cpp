@@ -13,10 +13,8 @@
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
-namespace XD::App
-{
-    class WndData
-    {
+namespace XD::App {
+    class WndData {
     public:
         SDL_Window*     window              = nullptr;
         VkSurfaceKHR    surface             = VK_NULL_HANDLE;
@@ -39,15 +37,13 @@ namespace XD::App
 
     WndEventData& eventData() {return *_eventStateInst;}
 
-    uint8_t getEventSwitch(const EventSwitch& switchType)
-    {
+    uint8_t getEventSwitch(const EventSwitch& switchType) {
         static size_t typeIdx; typeIdx = (size_t)switchType;
         if (_inst->eventSwitch.size() <= typeIdx) return UINT8_MAX;
         return _inst->eventSwitch[typeIdx];
     }
 
-    void setEventSwitch(const EventSwitch& switchType, const uint8_t& state)
-    {
+    void setEventSwitch(const EventSwitch& switchType, const uint8_t& state) {
         static size_t typeIdx; typeIdx = (size_t)switchType;
         if (_inst->eventSwitch.size() <= typeIdx)
             _inst->eventSwitch.resize(typeIdx + 1, UINT8_MAX);
@@ -58,8 +54,7 @@ namespace XD::App
 
     int getW() { return _inst->w; }
 
-    const clock_t& getStartTimePoint()
-    {
+    const clock_t& getStartTimePoint() {
         return _inst->startClock;
     }
 
@@ -72,23 +67,19 @@ namespace XD::App
     const WndEventData& event() { return *_eventStateInst; }
 }
 
-namespace XD::App
-{
-    static inline bool isWindowEvent(const SDL_Event& event)
-    {
+namespace XD::App {
+    static inline bool isWindowEvent(const SDL_Event& event) {
         return event.type >= SDL_EventType::SDL_WINDOWEVENT_FIRST && event.type <= SDL_EventType::SDL_WINDOWEVENT_LAST;
     }
 
-    static inline bool isEvent(const SDL_Event& event, const SDL_EventType& from, const SDL_EventType& to)
-    {
+    static inline bool isEvent(const SDL_Event& event, const SDL_EventType& from, const SDL_EventType& to) {
         return event.type >= from && event.type <= to;
     }
     static bool wndBoarded = false;
 
     // -----------------------------------------------------------------------------------------
 
-    void init(const char* wndName)
-    {
+    void init(const char* wndName) {
         if (!_inst) _inst = std::make_unique<WndData>();
         if (!_eventStateInst) _eventStateInst = std::make_unique<WndEventData>();
 
@@ -110,22 +101,19 @@ namespace XD::App
         auto wndFlags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
         wndBoarded = !(wndFlags & SDL_WINDOW_BORDERLESS);
 
-        if (xdWndInitConf_waitTime >= 0.5)
-        {
+        if (xdWndInitConf_waitTime >= 0.5) {
             _inst->window = SDL_CreateWindow(wndName, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, xdWndInitConf_loadingWidth, xdWndInitConf_loadingHeight, wndFlags);
             SDL_SetWindowBordered(_inst->window, SDL_FALSE);
             setEventSwitch(EventSwitch::ResizeWindow, 0);
         }
-        else
-        {
+        else {
             _inst->window = SDL_CreateWindow(wndName, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, xdWndInitConf_defWndWidth - 1, xdWndInitConf_defWndHeight, wndFlags);
             SDL_SetWindowMinimumSize(_inst->window, xdWndInitConf_loadingWidth, xdWndInitConf_loadingHeight);
         }
         int w, h;
         SDL_GetWindowSize(_inst->window, &w, &h);
 
-        if (xdWndInitConf_iconPngData && xdWndInitConf_iconPngSize)
-        {
+        if (xdWndInitConf_iconPngData && xdWndInitConf_iconPngSize) {
             auto iconSurf = SDL_RWFromConstMem((void*)xdWndInitConf_iconPngData, (int)xdWndInitConf_iconPngSize);
             auto icon = IMG_LoadPNG_RW(iconSurf);
             SDL_SetWindowIcon(_inst->window, icon);
@@ -142,8 +130,7 @@ namespace XD::App
         ImguiMgr::init(_inst->window, _inst->surface, _inst->w, _inst->h);
         WndMgr::init();
 
-        if (xdWndInitConf_waitTime < 0.5)
-        {
+        if (xdWndInitConf_waitTime < 0.5) {
             setEventSwitch(EventSwitch::ResizeWindow, UINT8_MAX);
             ImguiMgr::disableLoading();
         }
@@ -153,15 +140,13 @@ namespace XD::App
         checkInit();
     }
 
-    void eventRefresh(bool& quit, bool checkPlatformSpecialEvent)
-    {
+    void eventRefresh(bool& quit, bool checkPlatformSpecialEvent) {
         // 在此处处理事件处理事件
         // 设置 io.WantCaptureMouse, io.WantCaptureKeyboard 让 imgui 使用自定义输入
         // - io.WantCaptureMouse 为 true 时, 不再处理鼠标输入事件
         // - io.WantCaptureKeyboard 为 true 时, 不再捕获键盘输入事件
         static SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
+        while (SDL_PollEvent(&event)) {
             // 平台特化的事件处理
 #ifndef CC_NO_PLATFORM_SPECIAL_EVENT
             if(checkPlatformSpecialEvent) platformSpecialEvent(quit, event);
@@ -175,8 +160,7 @@ namespace XD::App
         }
     }
 
-    void updateHead(bool& quit [[maybe_unused]])
-    {
+    void updateHead(bool& quit [[maybe_unused]]) {
         checkFrame();
 
         // 重设交换链大小
@@ -184,17 +168,14 @@ namespace XD::App
         TimeMgr::refresh();
     }
 
-    void updateTail()
-    {
+    void updateTail() {
         WndMgr::update();
         ImguiMgr::render(_inst->bgColor);
         SDL_GetWindowSize(_inst->window, &(_inst->w), &(_inst->h));
 
-        if (xdWndInitConf_waitTime >= 0.5)
-        {
+        if (xdWndInitConf_waitTime >= 0.5) {
             if (ImguiMgr::notLoadingFinished() && !_inst->firstFrame &&
-                (TimeMgr::now() - _inst->startClock) > (xdWndInitConf_waitTime * 1000))
-            {
+                (TimeMgr::now() - _inst->startClock) > (xdWndInitConf_waitTime * 1000)) {
                 static int x, y;
                 if (wndBoarded) SDL_SetWindowBordered(_inst->window, SDL_TRUE);
                 SDL_SetWindowSize(_inst->window, xdWndInitConf_defWndWidth, xdWndInitConf_defWndHeight);
@@ -207,8 +188,7 @@ namespace XD::App
             }
         }
 
-        if (_inst->firstFrame)
-        {
+        if (_inst->firstFrame) {
             if (xdWndInitConf_waitTime >= 0.5)
                 SDL_SetWindowSize(_inst->window, xdWndInitConf_loadingWidth, xdWndInitConf_loadingHeight);
             else
@@ -217,20 +197,16 @@ namespace XD::App
         }
     }
 
-    void onUpdate(bool& quit, bool checkPlatformSpecialEvent)
-    {
+    void onUpdate(bool& quit, bool checkPlatformSpecialEvent) {
         eventRefresh(quit, checkPlatformSpecialEvent);
         updateHead(quit);
         quit |= _inst->willQuit;
         _inst->checkStart = _inst->newLoopUnit;
         _inst->newLoopUnit = false;
-        for (auto loopLayer : _loopUnits)
-        {
+        for (auto loopLayer : _loopUnits) {
             if (!loopLayer) continue;
-            if (_inst->checkStart)
-            {
-                for (auto loopUnit : *loopLayer)
-                {
+            if (_inst->checkStart) {
+                for (auto loopUnit : *loopLayer) {
                     if (loopUnit->_started) continue;
                     loopUnit->start();
                     loopUnit->_started = true;
@@ -245,8 +221,7 @@ namespace XD::App
         updateTail();
     }
 
-    void onDestroy()
-    {
+    void onDestroy() {
         auto err = vkDeviceWaitIdle(XD::VulkanMgr::getDev());
         XD::VulkanMgr::checkVkResultCType(err);
 
@@ -267,14 +242,12 @@ namespace XD::App
 
     // -----------------------------------------------------------------------------------------
 
-    LoopUnit::LoopUnit(LoopLayer layer) : _layer((uint8_t)layer), _selfApp(registerSelf())
-    {
+    LoopUnit::LoopUnit(LoopLayer layer) : _layer((uint8_t)layer), _selfApp(registerSelf()) {
         if (!App::_inst) throw Exce(__LINE__, __FILE__, "XD::LoopUnit: App 未初始化");
         App::_inst->newLoopUnit = true;
     }
 
-    std::list<LoopUnit*>::const_iterator LoopUnit::registerSelf()
-    {
+    std::list<LoopUnit*>::const_iterator LoopUnit::registerSelf() {
         if (_layer < 0 || _layer > CC_MAX_LOOP_LAYER_IDX)
             throw Exce(__LINE__, __FILE__, "XD::LoopUnit: 创建轮询单元失败");
 
@@ -283,11 +256,9 @@ namespace XD::App
         return --(App::_loopUnits[_layer]->cend());
     }
 
-    LoopUnit::~LoopUnit()
-    {
+    LoopUnit::~LoopUnit() {
         App::_loopUnits[_layer]->erase(_selfApp);
-        if (App::_loopUnits[_layer]->empty())
-        {
+        if (App::_loopUnits[_layer]->empty()) {
             delete App::_loopUnits[_layer];
             App::_loopUnits[_layer] = nullptr;
         }
@@ -298,10 +269,8 @@ namespace XD::App
 /// @param argc 参数数量
 /// @param argv 参数内容
 /// @return exitCode
-int main(int argc, char* argv[])
-{
-    try
-    {
+int main(int argc, char* argv[]) {
+    try {
         onInit(argc, argv);
         XD::App::init(XD::xdWndInitConf_wndName);
 #ifndef CC_NO_PLATFORM_SPECIAL_INIT
@@ -313,8 +282,7 @@ int main(int argc, char* argv[])
         onClose();
         XD::App::onDestroy();
     }
-    catch(const std::exception& e)
-    {
+    catch(const std::exception& e) {
         std::cerr << e.what() << '\n';
         system("pause");
     }

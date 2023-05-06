@@ -2,7 +2,8 @@
 
 #include <cstdint>
 
-// ================================================== 程序参数预定义
+// ================================================== Pre def
+
 namespace XD {
     extern const uint8_t* xdWndInitConf_iconPngData;
     extern size_t xdWndInitConf_iconPngSize;
@@ -15,20 +16,24 @@ namespace XD {
     extern int xdWndInitConf_loadingHeight;
 }
 
-// ================================================== 需要实现的函数
-/// @brief 程序初始化前执行
-/// @param argc 参数数量
-/// @param argv 传入参数
+// ================================================== Interface func
+/// @brief init func,
+/// called before appBase inited
+/// @param argc sys param count
+/// @param argv sys params
 extern void onInit(int argc, char* argv[]);
 
-/// @brief 程序初始化后执行
-/// @param argc 参数数量
-/// @param argv 传入参数
+/// @brief start func,
+/// called after appBase inited
+/// @param argc sys param count
+/// @param argv sys params
 extern void onStart(int argc, char* argv[]);
 
-/// @brief 程序退出时执行
+/// @brief close func,
+/// called while quit program
 extern void onClose();
 
-// ================================================== 不要实现该函数
-/// @brief 入口函数 (留用) 不要实现它
+// ================================================== Retention
+/// @brief this function is implemented by appBase,
+/// so don't redefine this in your program
 extern int main(int argc, char* argv[]);

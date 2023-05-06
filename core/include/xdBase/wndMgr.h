@@ -36,6 +36,11 @@ namespace XD::App {
         static const clock_t intervalGCTime = 100000; // 1.6 min
 
     public:
+        /// @brief open window
+        /// @param data window init data
+        /// @param windowName window name (used to gen the window unique str identify)
+        /// @tparam T window class
+        /// @return window id
         template<class T>
         requires std::is_base_of<WndBase<T>, T>::value
         static size_t open(WndDataBaseHolder* data = nullptr, std::string windowName = "") {
@@ -101,6 +106,10 @@ namespace XD::App {
             }
         }
 
+        /// @brief get an opening window
+        /// @param wndId window id
+        /// @tparam T window class
+        /// @return pointer of window class or nullptr while no window in this class opening
         template<class T>
         requires std::is_base_of<WndBase<T>, T>::value
         static T* getWnd(size_t wndId) {
@@ -113,6 +122,9 @@ namespace XD::App {
             return (*itr)->tryGetWnd<T>();
         }
 
+        /// @brief get all opening window
+        /// @tparam T window class
+        /// @return a pointer of target window class list, empty list while no window in this class opening
         template<class T>
         requires std::is_base_of<WndBase<T>, T>::value
         static std::list<T*> getWnds() {
@@ -131,6 +143,8 @@ namespace XD::App {
             return wndList;
         }
 
+        /// @brief close a window
+        /// @param wndId window id
         static void close(size_t wndId);
 
     private:

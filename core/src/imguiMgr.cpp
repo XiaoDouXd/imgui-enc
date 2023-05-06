@@ -10,8 +10,7 @@
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
-namespace XD::ImguiMgr
-{
+namespace XD::ImguiMgr {
     class ImguiMgrData {
     public:
         ImGui_ImplVulkanH_Window    wHandle;
