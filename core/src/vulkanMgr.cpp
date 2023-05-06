@@ -107,7 +107,7 @@ namespace XD::VulkanMgr {
         { throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 初始化调试信息失败"); }
 #else
         // 创建 vk 实例
-        _wndDataInst->instance = vk::createInstance(insInfo);
+        _inst->instance = vk::createInstance(insInfo);
 #endif
     }
 
