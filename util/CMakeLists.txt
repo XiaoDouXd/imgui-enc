@@ -7,9 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED true)
 
 # -------------------------------------------------- 链接文件
 file(GLOB_RECURSE ALL_SOURCE "src/*.cpp" "src/*.c")
-file(GLOB_RECURSE ALL_INCLUDE "include/*.h" "include/*.hpp")
+file(GLOB_RECURSE ALL_INCLUDE
+        "include/*.h"
+        "include/*.hpp"
+        "../3rd/stduuid/include/uuid.h"
+    )
 add_library(${PROJECT_NAME} STATIC
     ${ALL_SOURCE}
     ${ALL_INCLUDE}
 )
-target_include_directories(${PROJECT_NAME} PUBLIC "./include")
+target_include_directories(${PROJECT_NAME} PUBLIC ./include ../3rd/stduuid/include/)

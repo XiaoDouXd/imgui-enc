@@ -8,10 +8,19 @@
 
 #include "app.h"
 
-namespace XD
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+
+namespace XD::App
 {
+    /// @brief class T must be final class,
+    /// or you can ensure that T wouldn't be inherited!
     template<class T> class WndBase;
+
+    /// @brief class T must be final class,
+    /// or you can ensure that T wouldn't be inherited!
     template<class T> class WndDataBase;
+
     class WndBaseHolder;
     class WndDataBaseHolder;
 
@@ -31,11 +40,11 @@ namespace XD
         std::vector<std::function<void(WndBaseHolder&)>> onHideCB;
 
     protected:
-        WndDataBaseHolder(size_t classId) : classId(classId) {}
-        virtual ~WndDataBaseHolder() {}
+        explicit WndDataBaseHolder(size_t classId) : classId(classId) {}
+        virtual ~WndDataBaseHolder() = default;
 
     private:
-        const size_t classId;           // 窗口数据类型 id
+        const size_t classId; // 窗口数据类型 id
     };
 
     class WndBaseHolder : LoopUnit
@@ -50,16 +59,14 @@ namespace XD
             if (typeid(T).hash_code() != this->classId) return nullptr;
             return static_cast<T*>(this);
         }
-        const char* getNameId() const { return _nameWithId.c_str(); }
+        [[nodiscard]] const char* getNameId() const { return _nameWithId.c_str(); }
 
     protected:
-        WndBaseHolder(size_t classId, LoopLayer loopLayer) : LoopUnit(loopLayer), classId(classId) {}
-        virtual ~WndBaseHolder()
-        {
-            for (auto& hashcode : _events)
-                StaticEventMgr::unregisterEvent(hashcode, (std::ptrdiff_t) this);
-            onDestroy();
-        }
+        WndBaseHolder(size_t classId, LoopLayer loopLayer) :
+            LoopUnit(loopLayer),
+            classId(classId),
+            _uuid(UUID::gen()) {}
+        ~WndBaseHolder() override { unregisterAll(); }
 
         virtual void onInit() {}
         virtual void onShow(WndDataBaseHolder* wndData) {}
@@ -67,10 +74,9 @@ namespace XD
         virtual void onRefresh() = 0;
         virtual void onWndEnd() {}
         virtual void onHide() {}
-        virtual void onDestroy() {}
 
-        virtual void start() override final {}
-        virtual void update() override final
+        void start() final {}
+        void update() final
         {
             if (_showingWndId)
             {
@@ -82,24 +88,30 @@ namespace XD
         virtual void lateHide() final;
 
         template<typename EType>
-        requires EType::__cc_isEventType::value && std::is_same<typename EType::__cc_eType, EType>::value
-        void registerEvent(EType::__cc_fType cb)
+        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        void registerEvent(EType::_cc_fType cb)
         {
-            auto hashcode = StaticEventMgr::registerEvent<EType>((std::ptrdiff_t)this, cb);
+            auto hashcode = StaticEventMgr::registerEvent<EType>(_uuid, cb);
             if (hashcode) _events.insert(hashcode.value());
         }
 
         template<typename EType>
-        requires EType::__cc_isEventType::value && std::is_same<typename EType::__cc_eType, EType>::value
+        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
         void unregisterEvent()
         {
-            auto hashcode = StaticEventMgr::unregisterEvent<EType>((std::ptrdiff_t)this);
+            auto hashcode = StaticEventMgr::unregisterEvent<EType>(_uuid);
             if (hashcode) _events.erase(hashcode.value());
         }
 
     private:
+        void unregisterAll() {
+            for (auto& hashcode : _events)
+                StaticEventMgr::unregisterEvent(hashcode, _uuid);
+        }
+
         const size_t classId;           // 窗口类型 id
         size_t _showingWndId = 0;       // 隐藏时这个 id 会被设置为 0
+        uuids::uuid _uuid;              // 窗口唯一 id
         std::string _nameWithId;        // 窗口唯一 str
         std::set<std::size_t> _events;  // 窗口已注册的事件集
         std::vector<std::function<void(WndBaseHolder&)>> onHideCB;  // 关闭窗口时回调
@@ -110,21 +122,23 @@ namespace XD
     {
     protected:
         WndDataBase() : WndDataBaseHolder(typeid(T).hash_code()) {};
-        virtual ~WndDataBase() {}
+        ~WndDataBase() override = default;
     };
 
     /// @brief 默认 data
     class WndDataDefault : public WndDataBase<WndDataDefault>
     {
     public:
-        WndDataDefault() {}
+        WndDataDefault() = default;
     };
 
     template<class T>
     class WndBase : public WndBaseHolder
     {
     protected:
-        WndBase(LoopLayer loopLayer = LoopLayer::WndNormal) : WndBaseHolder(typeid(T).hash_code(), loopLayer) {}
-        virtual ~WndBase() { onDestroy(); }
+        explicit WndBase(LoopLayer loopLayer = LoopLayer::WndNormal) :
+            WndBaseHolder(typeid(T).hash_code(), loopLayer) {}
+        ~WndBase() override = default;
     };
 }
+#pragma clang diagnostic pop

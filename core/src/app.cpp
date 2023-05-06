@@ -1,27 +1,52 @@
-#include "_/__app_caller.hpp"
-#include "app.h"
-
 #include <iostream>
-#include <fstream>
 #include <SDL3/SDL_image.h>
 
-#include "ccexce.h"
 #include "entrance.h"
 #include "imgui_impl_sdl.h"
-#include "imguiMgr.h"
 #include "platform/univesal.h"
-#include "wndMgr.h"
 
-namespace XD
+#include "wndMgr.h"
+#include "p_app.h"
+#include "p_imguiMgr.h"
+#include "p_timeMgr.h"
+#include "p_vulkanMgr.h"
+
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+namespace XD::App
 {
-    uint8_t App::getEventSwitch(const EventSwitch& switchType)
+    class WndData
+    {
+    public:
+        SDL_Window*     window              = nullptr;
+        VkSurfaceKHR    surface             = VK_NULL_HANDLE;
+
+        std::vector<uint8_t> eventSwitch;
+        clock_t         startClock{};
+
+        ImVec4          bgColor             = {255, 255, 255, 255};
+        int             w                   = 0;
+        int             h                   = 0;
+        bool            willQuit            = false;
+        bool            newLoopUnit         = false;
+        bool            checkStart          = false;
+        bool            firstFrame          = true;
+    };
+
+    std::array<std::list<LoopUnit*>*, CC_MAX_LOOP_LAYER_IDX + 1> _loopUnits;
+    std::unique_ptr<WndData> _inst;
+    std::unique_ptr<WndEventData> _eventStateInst;
+
+    WndEventData& eventData() {return *_eventStateInst;}
+
+    uint8_t getEventSwitch(const EventSwitch& switchType)
     {
         static size_t typeIdx; typeIdx = (size_t)switchType;
         if (_inst->eventSwitch.size() <= typeIdx) return UINT8_MAX;
         return _inst->eventSwitch[typeIdx];
     }
 
-    void App::setEventSwitch(const EventSwitch& switchType, const uint8_t& state)
+    void setEventSwitch(const EventSwitch& switchType, const uint8_t& state)
     {
         static size_t typeIdx; typeIdx = (size_t)switchType;
         if (_inst->eventSwitch.size() <= typeIdx)
@@ -29,25 +54,25 @@ namespace XD
         _inst->eventSwitch[typeIdx] = state;
     }
 
-    int App::getH() { return _inst->h; }
+    int getH() { return _inst->h; }
 
-    int App::getW() { return _inst->w; }
+    int getW() { return _inst->w; }
 
-    const clock_t& App::getStartTimePoint()
+    const clock_t& getStartTimePoint()
     {
         return _inst->startClock;
     }
 
-    SDL_Window* App::getWHandle() { return _inst->window; }
+    SDL_Window* getWHandle() { return _inst->window; }
 
-    void App::setBGColor(const ImVec4& color) { _inst->bgColor = color; }
+    void setBGColor(const ImVec4& color) { _inst->bgColor = color; }
 
-    void App::quit() { _inst->willQuit = true; }
+    void quit() { _inst->willQuit = true; }
 
-    const App::WndEventData& App::event() { return *_eventStateInst; }
+    const WndEventData& event() { return *_eventStateInst; }
 }
 
-namespace XD
+namespace XD::App
 {
     static inline bool isWindowEvent(const SDL_Event& event)
     {
@@ -58,14 +83,11 @@ namespace XD
     {
         return event.type >= from && event.type <= to;
     }
-
-    std::unique_ptr<App::WndData> App::_inst = nullptr;
-    std::unique_ptr<App::WndEventData> App::_eventStateInst = nullptr;
-    static bool wndBoraded = false;
+    static bool wndBoarded = false;
 
     // -----------------------------------------------------------------------------------------
 
-    void App::init(const char* wndName)
+    void init(const char* wndName)
     {
         if (!_inst) _inst = std::make_unique<WndData>();
         if (!_eventStateInst) _eventStateInst = std::make_unique<WndEventData>();
@@ -85,31 +107,31 @@ namespace XD
         ImGuiIO& io = ImGui::GetIO(); (void)io;
 
         // 绑定到 vulkan 实例
-        SDL_WindowFlags wndFlags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
-        wndBoraded = !(wndFlags & SDL_WINDOW_BORDERLESS);
+        auto wndFlags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+        wndBoarded = !(wndFlags & SDL_WINDOW_BORDERLESS);
 
         if (xdWndInitConf_waitTime >= 0.5)
         {
-            _inst->window = SDL_CreateWindow(wndName, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, xdWndInitConf_lodingWidth, xdWndInitConf_lodingHeight, wndFlags);
+            _inst->window = SDL_CreateWindow(wndName, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, xdWndInitConf_loadingWidth, xdWndInitConf_loadingHeight, wndFlags);
             SDL_SetWindowBordered(_inst->window, SDL_FALSE);
             setEventSwitch(EventSwitch::ResizeWindow, 0);
         }
         else
         {
             _inst->window = SDL_CreateWindow(wndName, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, xdWndInitConf_defWndWidth - 1, xdWndInitConf_defWndHeight, wndFlags);
-            SDL_SetWindowMinimumSize(_inst->window, xdWndInitConf_lodingWidth, xdWndInitConf_lodingHeight);
+            SDL_SetWindowMinimumSize(_inst->window, xdWndInitConf_loadingWidth, xdWndInitConf_loadingHeight);
         }
         int w, h;
         SDL_GetWindowSize(_inst->window, &w, &h);
 
         if (xdWndInitConf_iconPngData && xdWndInitConf_iconPngSize)
         {
-            auto iconSurf = SDL_RWFromConstMem((void*)xdWndInitConf_iconPngData, xdWndInitConf_iconPngSize);
+            auto iconSurf = SDL_RWFromConstMem((void*)xdWndInitConf_iconPngData, (int)xdWndInitConf_iconPngSize);
             auto icon = IMG_LoadPNG_RW(iconSurf);
             SDL_SetWindowIcon(_inst->window, icon);
         }
         uint32_t extensionsCount = 0;
-        SDL_Vulkan_GetInstanceExtensions(_inst->window, &extensionsCount, NULL);
+        SDL_Vulkan_GetInstanceExtensions(_inst->window, &extensionsCount, nullptr);
         const char** extensions = new const char*[extensionsCount];
         SDL_Vulkan_GetInstanceExtensions(_inst->window, &extensionsCount, extensions);
         VulkanMgr::init(extensions, extensionsCount);
@@ -131,7 +153,7 @@ namespace XD
         checkInit();
     }
 
-    void App::eventRefresh(bool& quit, bool checkPlatformSpecialEvent)
+    void eventRefresh(bool& quit, bool checkPlatformSpecialEvent)
     {
         // 在此处处理事件处理事件
         // 设置 io.WantCaptureMouse, io.WantCaptureKeyboard 让 imgui 使用自定义输入
@@ -149,12 +171,11 @@ namespace XD
                 quit = true;
             if (isWindowEvent(event) && event.window.type == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(_inst->window))
                 quit = true;
-            static int w, h;
             checkEvent(event);
         }
     }
 
-    void App::updateHead(bool& quit)
+    void updateHead(bool& quit [[maybe_unused]])
     {
         checkFrame();
 
@@ -163,7 +184,7 @@ namespace XD
         TimeMgr::refresh();
     }
 
-    void App::updateTail()
+    void updateTail()
     {
         WndMgr::update();
         ImguiMgr::render(_inst->bgColor);
@@ -175,12 +196,12 @@ namespace XD
                 (TimeMgr::now() - _inst->startClock) > (xdWndInitConf_waitTime * 1000))
             {
                 static int x, y;
-                if (wndBoraded) SDL_SetWindowBordered(_inst->window, SDL_TRUE);
+                if (wndBoarded) SDL_SetWindowBordered(_inst->window, SDL_TRUE);
                 SDL_SetWindowSize(_inst->window, xdWndInitConf_defWndWidth, xdWndInitConf_defWndHeight);
                 SDL_GetWindowPosition(_inst->window, &x, &y);
                 SDL_SetWindowPosition(_inst->window,
-                    x - ((int)(xdWndInitConf_defWndWidth - xdWndInitConf_lodingWidth) >> 1),
-                    y - ((int)(xdWndInitConf_defWndHeight - xdWndInitConf_lodingHeight) >> 1));
+                    x - ((int)(xdWndInitConf_defWndWidth - xdWndInitConf_loadingWidth) >> 1),
+                    y - ((int)(xdWndInitConf_defWndHeight - xdWndInitConf_loadingHeight) >> 1));
                 setEventSwitch(EventSwitch::ResizeWindow, UINT8_MAX);
                 ImguiMgr::finishLoading();
             }
@@ -189,14 +210,14 @@ namespace XD
         if (_inst->firstFrame)
         {
             if (xdWndInitConf_waitTime >= 0.5)
-                SDL_SetWindowSize(_inst->window, xdWndInitConf_lodingWidth, xdWndInitConf_lodingHeight);
+                SDL_SetWindowSize(_inst->window, xdWndInitConf_loadingWidth, xdWndInitConf_loadingHeight);
             else
                 SDL_SetWindowSize(_inst->window, xdWndInitConf_defWndWidth, xdWndInitConf_defWndHeight);
             _inst->firstFrame = false;
         }
     }
 
-    void App::onUpdate(bool& quit, bool checkPlatformSpecialEvent)
+    void onUpdate(bool& quit, bool checkPlatformSpecialEvent)
     {
         eventRefresh(quit, checkPlatformSpecialEvent);
         updateHead(quit);
@@ -224,12 +245,12 @@ namespace XD
         updateTail();
     }
 
-    void App::onDestroy()
+    void onDestroy()
     {
         auto err = vkDeviceWaitIdle(XD::VulkanMgr::getDev());
-        XD::VulkanMgr::checkVkResultCtype(err);
+        XD::VulkanMgr::checkVkResultCType(err);
 
-        WndMgr::destory();
+        WndMgr::destroy();
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
@@ -245,8 +266,6 @@ namespace XD
     }
 
     // -----------------------------------------------------------------------------------------
-
-    std::array<std::list<LoopUnit*>*, CC_MAX_LOOP_LAYER_IDX + 1> App::_loopUnits = {};
 
     LoopUnit::LoopUnit(LoopLayer layer) : _layer((uint8_t)layer), _selfApp(registerSelf())
     {
@@ -284,15 +303,15 @@ int main(int argc, char* argv[])
     try
     {
         onInit(argc, argv);
-        XD::__app_caller::init(XD::xdWndInitConf_wndName);
+        XD::App::init(XD::xdWndInitConf_wndName);
 #ifndef CC_NO_PLATFORM_SPECIAL_INIT
         XD::platformSpecialInit();
 #endif
         onStart(argc, argv);
         bool done = false;
-        while (!done) XD::__app_caller::onUpdate(done);
+        while (!done) XD::App::onUpdate(done);
         onClose();
-        XD::__app_caller::onDestroy();
+        XD::App::onDestroy();
     }
     catch(const std::exception& e)
     {
@@ -302,3 +321,5 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
+#pragma clang diagnostic pop

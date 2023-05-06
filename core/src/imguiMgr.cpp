@@ -1,21 +1,35 @@
 #include "ccexce.h"
 #include "entrance.h"
 #include "imgui_impl_sdl.h"
-#include "imguiMgr.h"
-#include "vulkanMgr.h"
 
 #include "xdres/RES_FONTS_SOURCEHANSANSCN_NORMAL_OTF.h"
 #include "xdres/RES_FONTS_______________________UCC8105___1_0X00_.h"
 
-namespace XD
+#include "p_imguiMgr.h"
+#include "p_vulkanMgr.h"
+
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+namespace XD::ImguiMgr
 {
-    std::unique_ptr<ImguiMgr::ImguiMgrData> ImguiMgr::_inst = nullptr;
+    class ImguiMgrData
+    {
+    public:
+        ImGui_ImplVulkanH_Window    wHandle;
+        ImGuiIO*                    io                  = nullptr;
+        ImGuiContext*               context             = nullptr;
+        bool                        swapChainRebuild    = false;
+        bool                        notLoadingRendered  = true;
+        bool                        notLoaded           = true;
+    };
 
-    bool ImguiMgr::inited() { return (bool)_inst; }
+    std::unique_ptr<ImguiMgrData> _inst = nullptr;
 
-    bool ImguiMgr::notLoadingFinished() { return _inst->notloadingRendered; }
+    bool inited() { return (bool)_inst; }
 
-    void ImguiMgr::init(SDL_Window* wSdl, VkSurfaceKHR& surf, int w, int h)
+    bool notLoadingFinished() { return _inst->notLoadingRendered; }
+
+    void init(SDL_Window* wSdl, VkSurfaceKHR& surf, int w, int h)
     {
         if (_inst) return;
         if (!VulkanMgr::inited()) throw Exce(__LINE__, __FILE__, "XD::ImguiMgr: 未初始化 vulkan");
@@ -62,20 +76,20 @@ namespace XD
         initInfo.Device = VulkanMgr::getDev();
         initInfo.QueueFamily = VulkanMgr::getQueueFamily();
         initInfo.Queue = VulkanMgr::getQueue();
-        initInfo.PipelineCache = VulkanMgr::getPiplineCache();
+        initInfo.PipelineCache = VulkanMgr::getPipelineCache();
         initInfo.DescriptorPool = VulkanMgr::getDescPool();
         initInfo.Subpass = 0;
         initInfo.MinImageCount = VulkanMgr::getMinImageCount();
         initInfo.ImageCount = _inst->wHandle.ImageCount;
         initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         initInfo.Allocator = nullptr;
-        initInfo.CheckVkResultFn = VulkanMgr::checkVkResultCtype;
+        initInfo.CheckVkResultFn = VulkanMgr::checkVkResultCType;
         ImGui_ImplVulkan_Init(&initInfo, _inst->wHandle.RenderPass);
         initDefaultStyle();
         prePresentFont();
     }
 
-    void ImguiMgr::render(const ImVec4& clearColor)
+    void render(const ImVec4& clearColor)
     {
         ImGui::Render();
         ImDrawData* drawData = ImGui::GetDrawData();
@@ -96,24 +110,24 @@ namespace XD
             _inst->swapChainRebuild = true;
             return;
         }
-        VulkanMgr::checkVkResultCtype(err);
+        VulkanMgr::checkVkResultCType(err);
 
         ImGui_ImplVulkanH_Frame* fd = &_inst->wHandle.Frames[_inst->wHandle.FrameIndex];
         {
             err = vkWaitForFences(VulkanMgr::getDev(), 1, &fd->Fence, VK_TRUE, UINT64_MAX);
-            VulkanMgr::checkVkResultCtype(err);
+            VulkanMgr::checkVkResultCType(err);
 
             err = vkResetFences(VulkanMgr::getDev(), 1, &fd->Fence);
-            VulkanMgr::checkVkResultCtype(err);
+            VulkanMgr::checkVkResultCType(err);
         }
         {
             err = vkResetCommandPool(VulkanMgr::getDev(), fd->CommandPool, 0);
-            VulkanMgr::checkVkResultCtype(err);
+            VulkanMgr::checkVkResultCType(err);
             VkCommandBufferBeginInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
             err = vkBeginCommandBuffer(fd->CommandBuffer, &info);
-            VulkanMgr::checkVkResultCtype(err);
+            VulkanMgr::checkVkResultCType(err);
         }
         {
             VkRenderPassBeginInfo info = {};
@@ -145,16 +159,16 @@ namespace XD
             info.pSignalSemaphores = &render_complete_semaphore;
 
             err = vkEndCommandBuffer(fd->CommandBuffer);
-            VulkanMgr::checkVkResultCtype(err);
+            VulkanMgr::checkVkResultCType(err);
             err = vkQueueSubmit(VulkanMgr::getQueue(), 1, &info, fd->Fence);
-            VulkanMgr::checkVkResultCtype(err);
+            VulkanMgr::checkVkResultCType(err);
         }
 
         // 提呈指令缓冲
         present();
     }
 
-    void ImguiMgr::present()
+    void present()
     {
         if (_inst->swapChainRebuild) return;
         VkSemaphore render_complete_semaphore = _inst->wHandle.FrameSemaphores[_inst->wHandle.SemaphoreIndex].RenderCompleteSemaphore;
@@ -167,11 +181,11 @@ namespace XD
         info.pImageIndices = &_inst->wHandle.FrameIndex;
         VkResult err = vkQueuePresentKHR(VulkanMgr::getQueue(), &info);
         if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) { _inst->swapChainRebuild = true; return; }
-        VulkanMgr::checkVkResultCtype(err);
+        VulkanMgr::checkVkResultCType(err);
         _inst->wHandle.SemaphoreIndex = (_inst->wHandle.SemaphoreIndex + 1) % _inst->wHandle.ImageCount;
     }
 
-    void ImguiMgr::prePresentFont()
+    void prePresentFont()
     {
         static const int nameMaxSize = 25;
         static const char* name = "source han san scn normal";
@@ -200,12 +214,12 @@ namespace XD
         VkCommandBuffer commandBuffer = _inst->wHandle.Frames[_inst->wHandle.FrameIndex].CommandBuffer;
 
         auto err = vkResetCommandPool(VulkanMgr::getDev(), commandPool, 0);
-        VulkanMgr::checkVkResultCtype(err);
+        VulkanMgr::checkVkResultCType(err);
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         err = vkBeginCommandBuffer(commandBuffer, &beginInfo);
-        VulkanMgr::checkVkResultCtype(err);
+        VulkanMgr::checkVkResultCType(err);
 
         ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
 
@@ -214,16 +228,16 @@ namespace XD
         endInfo.commandBufferCount = 1;
         endInfo.pCommandBuffers = &commandBuffer;
         err = vkEndCommandBuffer(commandBuffer);
-        VulkanMgr::checkVkResultCtype(err);
+        VulkanMgr::checkVkResultCType(err);
         err = vkQueueSubmit(VulkanMgr::getQueue(), 1, &endInfo, VK_NULL_HANDLE);
-        VulkanMgr::checkVkResultCtype(err);
+        VulkanMgr::checkVkResultCType(err);
 
         err = vkDeviceWaitIdle(VulkanMgr::getDev());
-        VulkanMgr::checkVkResultCtype(err);
+        VulkanMgr::checkVkResultCType(err);
         ImGui_ImplVulkan_DestroyFontUploadObjects();
     }
 
-    void ImguiMgr::presentFont()
+    void presentFont()
     {
         // 还没有顺利找到 imgui 的动态字体解决方案, 先推进别的
 
@@ -243,16 +257,16 @@ namespace XD
         //     io.Fonts->GetGlyphRangesChineseFull());
         // io.Fonts->Build();
 
-        // VkCommandPool commandPool = _inst->wHandle.Frames[_inst->wHandle.FrameIndex].CommandPool;
-        // VkCommandBuffer commandBuffer = _inst->wHandle.Frames[_inst->wHandle.FrameIndex].CommandBuffer;
+        // VkCommandPool commandPool = _wndDataInst->wHandle.Frames[_wndDataInst->wHandle.FrameIndex].CommandPool;
+        // VkCommandBuffer commandBuffer = _wndDataInst->wHandle.Frames[_wndDataInst->wHandle.FrameIndex].CommandBuffer;
 
         // auto err = vkResetCommandPool(VulkanMgr::getDev(), commandPool, 0);
-        // VulkanMgr::checkVkResultCtype(err);
+        // VulkanMgr::checkVkResultCType(err);
         // VkCommandBufferBeginInfo beginInfo = {};
         // beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         // beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         // err = vkBeginCommandBuffer(commandBuffer, &beginInfo);
-        // VulkanMgr::checkVkResultCtype(err);
+        // VulkanMgr::checkVkResultCType(err);
 
         // ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
 
@@ -261,16 +275,16 @@ namespace XD
         // endInfo.commandBufferCount = 1;
         // endInfo.pCommandBuffers = &commandBuffer;
         // err = vkEndCommandBuffer(commandBuffer);
-        // VulkanMgr::checkVkResultCtype(err);
+        // VulkanMgr::checkVkResultCType(err);
         // err = vkQueueSubmit(VulkanMgr::getQueue(), 1, &endInfo, VK_NULL_HANDLE);
-        // VulkanMgr::checkVkResultCtype(err);
+        // VulkanMgr::checkVkResultCType(err);
 
         // err = vkDeviceWaitIdle(VulkanMgr::getDev());
-        // VulkanMgr::checkVkResultCtype(err);
+        // VulkanMgr::checkVkResultCType(err);
         // ImGui_ImplVulkan_DestroyFontUploadObjects();
     }
 
-    void ImguiMgr::initDefaultStyle()
+    void initDefaultStyle()
     {
         // --------------------------------------------------- 设置样式
         ImGui::StyleColorsLight();
@@ -341,20 +355,20 @@ namespace XD
         getIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     }
 
-    void ImguiMgr::disableLoading()
+    void disableLoading()
     {
-        _inst->notloadingRendered = false;
+        _inst->notLoadingRendered = false;
         _inst->notLoaded = false;
     }
 
-    void ImguiMgr::finishLoading()
+    void finishLoading()
     {
-        _inst->notloadingRendered = false;
+        _inst->notLoadingRendered = false;
     }
 
-    void ImguiMgr::preRender(SDL_Window* window, int& w, int& h)
+    void preRender(SDL_Window* window, [[maybe_unused]] int& w, [[maybe_unused]] int& h)
     {
-        if (_inst->notLoaded && !_inst->notloadingRendered)
+        if (_inst->notLoaded && !_inst->notLoadingRendered)
         {
             presentFont();
             _inst->notLoaded = false;
@@ -388,9 +402,16 @@ namespace XD
         ImGui::NewFrame();
     }
 
-    void ImguiMgr::destroy()
+    void destroy()
     {
         ImGui_ImplVulkanH_DestroyWindow(VulkanMgr::getInst(), VulkanMgr::getDev(), &(_inst->wHandle), nullptr);
         _inst.reset();
     }
+
+#define CHECK_INITED if (!inited()) throw Exce(__LINE__, __FILE__, "XD::ImgMgr Exce: not init")
+    ImGui_ImplVulkanH_Window& getHWnd() { CHECK_INITED; return _inst->wHandle; }
+    ImGuiIO& getIO() { CHECK_INITED; return *(_inst->io); }
+    ImGuiContext& getContext() { CHECK_INITED; return *(_inst->context); }
+#undef CHECK_INITED
 }
+#pragma clang diagnostic pop

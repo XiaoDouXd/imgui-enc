@@ -14,7 +14,14 @@ add_subdirectory(core)
 add_subdirectory(3rd)
 
 include(../Config.cmake)
-file(GLOB_RECURSE ALL_SOURCE "core/src/*.cpp" "core/src/*.c" "core/src/*.h" "core/src/*.hpp" "core/include/*.h" "core/include/*.hpp")
+file(GLOB_RECURSE ALL_SOURCE
+    "core/src/*.cpp"
+    "core/src/*.c"
+    "core/src/*.h"
+    "core/src/*.hpp"
+    "core/include/*.h" 
+    "core/include/*.hpp"
+)
 
 add_library(${PROJECT_NAME} ${ALL_SOURCE})
 target_include_directories(${PROJECT_NAME} PUBLIC ./core/include)

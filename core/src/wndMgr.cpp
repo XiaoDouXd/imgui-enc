@@ -1,7 +1,6 @@
 #include "wndMgr.h"
-#include "app.h"
 
-namespace XD
+namespace XD::App
 {
     std::unique_ptr<WndMgr::WndMgrData> WndMgr::_inst = nullptr;
 
@@ -21,17 +20,18 @@ namespace XD
 
         auto itr = _inst->shownWndPool[wndId];
         (*itr)->onHide();
+        (*itr)->unregisterAll();
         (*itr)->lateHide();
         (*itr)->_showingWndId = 0;
-        _inst->hidenWndPool[(*itr)->classId].push_front({itr, wndId, TimeMgr::now()});
+        _inst->hiddenWndPool[(*itr)->classId].push_front({itr, wndId, TimeMgr::now()});
         _inst->shownWndPool.erase(wndId);
     }
 
     void WndMgr::wndGC()
     {
         static std::stack<size_t> delCache = std::stack<size_t>();
-        if (_inst->hidenWndPool.empty()) return;
-        for (auto& wndList : _inst->hidenWndPool)
+        if (_inst->hiddenWndPool.empty()) return;
+        for (auto& wndList : _inst->hiddenWndPool)
         {
             while (!wndList.second.empty() &&
                 (TimeMgr::now() - wndList.second.back().hideTime) > intervalGCTime)
@@ -52,7 +52,7 @@ namespace XD
         }
         while (!delCache.empty())
         {
-            _inst->hidenWndPool.erase(delCache.top());
+            _inst->hiddenWndPool.erase(delCache.top());
             delCache.pop();
         }
     }
@@ -71,29 +71,23 @@ namespace XD
         _inst = std::make_unique<WndMgrData>();
     }
 
-    void WndMgr::destory()
-    {
+    void WndMgr::destroy() {
         for (auto& wndCls : _inst->wndClassPool)
             for (auto& wnd : wndCls.second)
                 delete wnd;
         _inst.reset();
     }
 
-    void WndBaseHolder::closeSelf()
-    {
+    void WndBaseHolder::closeSelf() {
         onHide();
         lateHide();
-        for (auto& hashcode : _events)
-            StaticEventMgr::unregisterEvent(hashcode, (std::ptrdiff_t) this);
+        unregisterAll();
 
-        if (!_showingWndId)
-            _showingWndId = SIZE_MAX;
-        else
-            WndMgr::close(_showingWndId);
+        if (!_showingWndId) _showingWndId = SIZE_MAX;
+        else WndMgr::close(_showingWndId);
     }
 
-    void WndBaseHolder::lateHide()
-    {
+    void WndBaseHolder::lateHide() {
         for (auto& hideCB : onHideCB) hideCB(*this);
     }
 }

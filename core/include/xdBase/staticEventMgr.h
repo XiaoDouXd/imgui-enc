@@ -11,6 +11,8 @@
 #include <type_traits>
 #include <unordered_map>
 
+#include "uuidGen.h"
+
 namespace XD
 {
     /// @brief 事件类型基类
@@ -19,23 +21,32 @@ namespace XD
     {
         friend class StaticEventMgr;
     public:
-        using __cc_eType = EType;
-        using __cc_fType = std::function<void(ArgTypes...)>;
-        using __cc_isEventType = std::true_type;
+        using _cc_eType = EType;
+        using _cc_fType = std::function<void(ArgTypes...)>;
+        using _cc_isEventType = std::true_type;
+    };
+
+
+    class _xd_staticEvent_BaseFunc { public: virtual ~_xd_staticEvent_BaseFunc() = default; };
+    template<class EType>
+    class _xd_staticEvent_Func : public _xd_staticEvent_BaseFunc
+    {
+    public:
+        explicit _xd_staticEvent_Func(typename EType::_cc_fType func): func(func) {}
+        typename EType::_cc_fType func;
     };
 
     class StaticEventMgr
     {
-        friend class App;
     private:
         struct EventAsyncHandler;
         struct EventHandler
         {
         public:
-            EventHandler(std::ptrdiff_t objId, std::unique_ptr<std::_Function_base>&& cb)
-            :objId(objId), cb(std::move(cb)), waiting(std::queue<std::list<EventAsyncHandler>::const_iterator>()) {}
-            std::ptrdiff_t objId    = 0;
-            std::unique_ptr<std::_Function_base> cb = nullptr;
+            EventHandler(uuids::uuid objId, std::unique_ptr<_xd_staticEvent_BaseFunc>&& cb)
+                    :objId(objId), cb(std::move(cb)), waiting(std::queue<std::list<EventAsyncHandler>::const_iterator>()) {}
+            uuids::uuid objId = uuids::uuid();
+            std::unique_ptr<_xd_staticEvent_BaseFunc> cb = nullptr;
             std::queue<std::list<EventAsyncHandler>::const_iterator> waiting;
         };
 
@@ -43,7 +54,7 @@ namespace XD
         {
         public:
             EventAsyncHandler(EventHandler* event, std::function<void()> invoke)
-            :event(event), invoke(invoke) {}
+                    :event(event), invoke(std::move(invoke)) {}
             EventHandler* event = nullptr;
             std::function<void()> invoke;
         };
@@ -52,9 +63,9 @@ namespace XD
         {
         public:
             /// @brief 静态事件 <事件id, <事件监听成员, EventHandler>>
-            std::unordered_map<std::size_t, std::map<std::ptrdiff_t, EventHandler>> staticEvents;
+            std::unordered_map<std::size_t, std::map<uuids::uuid, EventHandler>> staticEvents;
             /// @brief 异步事件的等待队列
-            std::list<EventAsyncHandler>                                            waitingQueue;
+            std::list<EventAsyncHandler>                                         waitingQueue;
         };
         static std::unique_ptr<EventMgrData> _inst;
 
@@ -65,19 +76,19 @@ namespace XD
         /// @param cb 事件的回调
         /// @return 注册到事件的哈希值包 (可以使用这个哈希值注销事件)
         template<class EType>
-        requires EType::__cc_isEventType::value && std::is_same<typename EType::__cc_eType, EType>::value
-        static std::optional<std::size_t> registerEvent(std::ptrdiff_t obj, EType::__cc_fType cb)
-        {
+        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        static std::optional<std::size_t> registerEvent(uuids::uuid obj, typename EType::_cc_fType cb) {
             std::size_t hashCode = typeid(EType).hash_code();
             auto& eDic = _inst->staticEvents;
             if (eDic.find(hashCode) == eDic.end())
-                eDic.insert({hashCode, std::map<std::ptrdiff_t, EventHandler>()});
+                eDic.insert({hashCode, std::map<uuids::uuid, EventHandler>()});
             auto& lDic = eDic[hashCode];
             if (lDic.find(obj) != lDic.end()) return std::nullopt;
             lDic.insert(std::pair(obj, EventHandler(
                     obj,
-                    std::unique_ptr<std::_Function_base>(reinterpret_cast<std::_Function_base*>(new EType::__cc_fType(cb)))
-                )));
+                    std::unique_ptr<_xd_staticEvent_BaseFunc>
+                            (reinterpret_cast<_xd_staticEvent_BaseFunc*>(new _xd_staticEvent_Func<EType>(cb)))
+            )));
             return std::make_optional<std::size_t>(hashCode);
         }
 
@@ -85,9 +96,8 @@ namespace XD
         /// @tparam EType 注销的事件类型
         /// @param obj 监听器的 id (一般用对象内存地址描述)
         template<class EType>
-        requires EType::__cc_isEventType::value && std::is_same<typename EType::__cc_eType, EType>::value
-        static std::optional<std::size_t> unregisterEvent(std::ptrdiff_t obj)
-        {
+        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        static std::optional<std::size_t> unregisterEvent(const uuids::uuid& obj) {
             std::size_t hashCode = typeid(EType).hash_code();
             auto& eDic = _inst->staticEvents;
             if (eDic.find(hashCode) == eDic.end()) return std::nullopt;
@@ -108,26 +118,23 @@ namespace XD
         /// @brief 注销事件
         /// @param hashCode 事件的哈希值
         /// @param obj 监听器的 id (一般用对象内存地址描述)
-        static void unregisterEvent(const std::size_t& hashCode, std::ptrdiff_t obj);
+        static void unregisterEvent(const std::size_t& hashCode, uuids::uuid obj);
 
         /// @brief 注销事件
         /// @param hashCodeOpt 事件的哈希值包
         /// @param obj 监听器的 id (一般用对象内存地址描述)
-        static void unregisterEvent(const std::optional<std::size_t>& hashCodeOpt, std::ptrdiff_t obj);
+        static void unregisterEvent(const std::optional<std::size_t>& hashCodeOpt, uuids::uuid obj);
 
         /// @brief 某事件的所有监听
         /// @tparam EType 事件类型
         template<class EType>
-        requires EType::__cc_isEventType::value && std::is_same<typename EType::__cc_eType, EType>::value
-        static void clearEvent()
-        {
+        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        static void clearEvent() {
             std::size_t hashCode = typeid(EType).hash_code();
             auto& eDic = _inst->staticEvents;
             if (eDic.find(hashCode) == eDic.end()) return;
-            for (auto& lDic : eDic[hashCode])
-            {
-                while (!lDic.second.waiting.empty())
-                {
+            for (auto& lDic : eDic[hashCode]) {
+                while (!lDic.second.waiting.empty()) {
                     _inst->waitingQueue.erase(lDic.second.waiting.front());
                     lDic.second.waiting.pop();
                 }
@@ -140,17 +147,16 @@ namespace XD
         /// @tparam ...ArgTypes 参数包 (定义事件类型时所指定的参数)
         /// @param ...args 要传递参数
         template<class EType, typename... ArgTypes>
-        requires EType::__cc_isEventType::value && std::is_same<typename EType::__cc_eType, EType>::value
-        && std::is_same<typename EType::__cc_fType, std::function<void(ArgTypes...)>>::value
-        static void broadcast(ArgTypes... args)
-        {
+        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        && std::is_same<typename EType::_cc_fType, std::function<void(ArgTypes...)>>::value
+        static void broadcast(ArgTypes... args) {
             std::size_t hashCode = typeid(EType).hash_code();
             auto& eDic = _inst->staticEvents;
             if (eDic.find(hashCode) == eDic.end()) return;
             for (auto& lDic : eDic[hashCode])
             {
-                auto cb = reinterpret_cast<typename EType::__cc_fType*>(lDic.second.cb.get());
-                (*cb)(std::forward<ArgTypes>(args)...);
+                reinterpret_cast<_xd_staticEvent_Func<EType>*>(lDic.second.cb.get())->
+                        func(std::forward<ArgTypes>(args)...);
             }
         }
 
@@ -159,27 +165,32 @@ namespace XD
         /// @tparam ...ArgTypes 参数包 (定义事件类型时所指定的参数)
         /// @param ...args 要传递的参数
         template<class EType, typename... ArgTypes>
-        requires EType::__cc_isEventType::value && std::is_same<typename EType::__cc_eType, EType>::value
-        && std::is_same<typename EType::__cc_fType, std::function<void(ArgTypes...)>>::value
-        static void broadcastAsync(ArgTypes... args)
-        {
+        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        && std::is_same<typename EType::_cc_fType, std::function<void(ArgTypes...)>>::value
+        static void broadcastAsync(ArgTypes... args) {
             std::size_t hashCode = typeid(EType).hash_code();
             auto& eDic = _inst->staticEvents;
             if (eDic.find(hashCode) == eDic.end()) return;
-            for (auto& lDic : eDic[hashCode])
-            {
-                auto cb = reinterpret_cast<typename EType::__cc_fType*>(lDic.second.cb.get());
+            for (auto& lDic : eDic[hashCode]) {
+                auto cbPtr = reinterpret_cast<_xd_staticEvent_Func<EType>*>(lDic.second.cb.get());
                 _inst->waitingQueue.emplace_back(
-                    EventAsyncHandler(
-                        &lDic.second,
-                        [cb, args...](){(*cb)(args...);}
-                    ));
-                lDic.second.waiting.push(--(_inst->waitingQueue.end()));
+                        EventAsyncHandler(
+                                &lDic.second,
+                                [cbPtr, args...](){cbPtr->func(args...);}
+                        ));
+                lDic.second.waiting.emplace(--(_inst->waitingQueue.end()));
             }
         }
 
-    private:
+    public:
+
+        /// @brief 初始化
         static void init();
+
+        /// @brief 刷新帧
         static void update();
+
+        /// @brief 销毁
+        static void destroy();
     };
 }

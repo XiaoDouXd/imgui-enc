@@ -1,12 +1,6 @@
 #pragma once
 
-#include "app.h"
-#include "imguiMgr.h"
-#include "staticEvent.h"
-#include "staticEventMgr.h"
-#include "timeMgr.h"
-#include "wndMgr.h"
-#include "vulkanMgr.h"
+#include <cstdint>
 
 // ================================================== 程序参数预定义
 namespace XD
@@ -18,8 +12,8 @@ namespace XD
     extern double xdWndInitConf_waitTime;
     extern int xdWndInitConf_defWndWidth;
     extern int xdWndInitConf_defWndHeight;
-    extern int xdWndInitConf_lodingWidth;
-    extern int xdWndInitConf_lodingHeight;
+    extern int xdWndInitConf_loadingWidth;
+    extern int xdWndInitConf_loadingHeight;
 }
 
 // ================================================== 需要实现的函数

@@ -1,6 +1,5 @@
 #include "vulkanMgr.h"
 
-#include <cassert>
 #ifdef CC_VK_DEBUG_REPORT
 #include <cstdio>         // printf, fprintf
 #include <cstdlib>        // abort
@@ -8,9 +7,39 @@
 #include <cstring>        // memcpy
 
 #include "ccexce.h"
+#include "p_vulkanMgr.h"
 
-namespace XD
+namespace XD::VulkanMgr
 {
+    class Data
+    {
+    public:
+        struct InitRec
+        {
+        public:
+            bool dev;
+            bool phyDev;
+            bool queueFamily;
+            void clear() { dev = phyDev = queueFamily = false; }
+        };
+
+        vk::Instance                        instance;
+        vk::PhysicalDevice                  physicalDevice;
+        vk::Device                          device;
+        uint32_t                            queueFamily{};
+        vk::Queue                           queue;
+#ifdef CC_VK_DEBUG_REPORT
+        vk::DebugReportCallbackEXT          debugReport;
+#endif
+        vk::PipelineCache                   pipelineCache;
+        vk::DescriptorPool                  descriptorPool;
+
+        uint32_t                            minImageCount = 2;
+        InitRec                             initState{};
+
+        ~Data() = default;
+    };
+
 #ifdef CC_VK_DEBUG_REPORT
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugReport(
         VkDebugReportFlagsEXT flags,
@@ -27,27 +56,26 @@ namespace XD
     }
 #endif
 
-    std::unique_ptr<VulkanMgr::VulkanMgrData> VulkanMgr::_inst = nullptr;
+    std::unique_ptr<Data> _inst = nullptr;
 
-    bool VulkanMgr::inited() { return (bool)_inst; }
+    bool inited() { return (bool)_inst; }
 
-    void VulkanMgr::checkVkResultCtype(VkResult err)
+    void checkVkResultCType(VkResult err)
     {
         if (err == 0) return;
-        throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: Result = " + (int)err);
-        if (err < 0) abort();
+        throw Exce(__LINE__, __FILE__, &"XD::VulkanMgr Exce: Result = " [ (int)err]);
     }
 
-    void VulkanMgr::checkVkResult(vk::Result err)
+    void checkVkResult(vk::Result err)
     {
         if (err == vk::Result::eSuccess) return;
-        throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: Result = " + (int)err);
+        throw Exce(__LINE__, __FILE__, &"XD::VulkanMgr Exce: Result = " [ (int)err]);
     }
 
-    void VulkanMgr::createInst(const char** extensions, uint32_t extensionsCount)
+    void createInst(const char** extensions, uint32_t extensionsCount)
     {
         if (_inst) return;
-        _inst = std::make_unique<VulkanMgrData>();
+        _inst = std::make_unique<Data>();
 
         // 创建 vk 实例并应用校验层
         vk::InstanceCreateInfo insInfo;
@@ -82,15 +110,15 @@ namespace XD
         vk::DynamicLoader dl;
         auto GetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
         vk::DispatchLoaderDynamic dispatch((_inst->instance), GetInstanceProcAddr);
-        if (_inst->instance.createDebugReportCallbackEXT(&debugMessengerInfo, 0, &(_inst->debugReport), dispatch) != vk::Result::eSuccess)
+        if (_inst->instance.createDebugReportCallbackEXT(&debugMessengerInfo, nullptr, &(_inst->debugReport), dispatch) != vk::Result::eSuccess)
         { throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 初始化调试信息失败"); }
 #else
         // 创建 vk 实例
-        _inst->instance = vk::createInstance(insInfo);
+        _wndDataInst->instance = vk::createInstance(insInfo);
 #endif
     }
 
-    void VulkanMgr::selectGPU()
+    void selectGPU()
     {
         if (!_inst) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: Instance Empty");
         if (_inst->initState.phyDev) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 重复选择 GPU");
@@ -98,7 +126,7 @@ namespace XD
         if (allGPU.empty()) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 找不到可用 GPU");
 
         uint32_t selectedGpu = 0;
-        for (auto i = std::size_t(0); i < selectedGpu; i++)
+        for (auto i = std::size_t(0); i < allGPU.size(); i++)
         {
             if (allGPU[i].getProperties().deviceType ==
                 vk::PhysicalDeviceType::eDiscreteGpu)
@@ -111,7 +139,7 @@ namespace XD
         _inst->initState.phyDev = true;
     }
 
-    void VulkanMgr::createDevice()
+    void createDevice()
     {
         if (!_inst) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: Instance Empty");
         if (!(_inst->initState.queueFamily)) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 没有初始化队列簇");
@@ -133,25 +161,23 @@ namespace XD
         _inst->initState.dev = true;
     }
 
-    void VulkanMgr::selectQueueFamily()
+    void selectQueueFamily()
     {
         if (!_inst) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: Instance Empty");
         if (!(_inst->initState.phyDev)) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 没有初始化 GPU");
-        auto found = false;
         auto _queueProp = _inst->physicalDevice.getQueueFamilyProperties();
         for(auto i = 0; i < _queueProp.size(); i++)
         {
             if (_queueProp[i].queueFlags & vk::QueueFlagBits::eGraphics)
             {
                 _inst->queueFamily = i;
-                found = true;
                 _inst->initState.queueFamily = true;
                 return;
             }
         }
     }
 
-    void VulkanMgr::createDescPool()
+    void createDescPool()
     {
         if (!_inst) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: Instance Empty");
         if (!(_inst->initState.dev)) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 没有初始化 Dev");
@@ -182,7 +208,7 @@ namespace XD
 #undef ARRAYSIZE
     }
 
-    void VulkanMgr::init(const char** extensions, uint32_t extensionsCount)
+    void init(const char** extensions, uint32_t extensionsCount)
     {
         if (_inst) return;
 
@@ -193,7 +219,7 @@ namespace XD
         createDescPool();
     }
 
-    void VulkanMgr::destroy()
+    void destroy()
     {
         vkDestroyDescriptorPool(_inst->device, _inst->descriptorPool, nullptr);
 #ifdef CC_VK_DEBUG_REPORT
@@ -204,4 +230,13 @@ namespace XD
         vkDestroyInstance(_inst->instance, nullptr);
         _inst.reset();
     }
+
+    vk::Instance& getInst() { return _inst->instance; }
+    vk::PhysicalDevice& getPhyDev() { return _inst->physicalDevice; }
+    vk::Device& getDev() { return _inst->device; }
+    uint32_t getQueueFamily() { return _inst->queueFamily; }
+    vk::Queue& getQueue() { return _inst->queue; }
+    vk::PipelineCache& getPipelineCache() { return _inst->pipelineCache; }
+    vk::DescriptorPool& getDescPool() { return _inst->descriptorPool; }
+    uint32_t getMinImageCount() { return _inst->minImageCount; }
 }

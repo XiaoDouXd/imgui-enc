@@ -9,11 +9,16 @@
 
 #include "wndBase.hpp"
 
-namespace XD
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+
+namespace XD::App
 {
     class WndMgr
     {
-        friend class App;
+        friend void init(const char* wndName);
+        friend void updateTail();
+        friend void onDestroy();
     private:
         struct WndHolderItr
         {
@@ -25,7 +30,7 @@ namespace XD
         {
         public:
             std::unordered_map<size_t, std::list<WndBaseHolder*>> wndClassPool;
-            std::unordered_map<size_t, std::list<WndHolderItr>> hidenWndPool;
+            std::unordered_map<size_t, std::list<WndHolderItr>> hiddenWndPool;
             std::unordered_map<size_t, std::list<WndBaseHolder*>::iterator> shownWndPool;
             std::unordered_set<size_t> allWndPool;
             size_t curId = 0;
@@ -41,8 +46,8 @@ namespace XD
         {
             auto classId = typeid(T).hash_code();
             windowName = windowName.empty() ? typeid(T).name() : windowName;
-            if (_inst->hidenWndPool.find(classId) == _inst->hidenWndPool.end() ||
-                _inst->hidenWndPool[classId].empty()
+            if (_inst->hiddenWndPool.find(classId) == _inst->hiddenWndPool.end() ||
+                _inst->hiddenWndPool[classId].empty()
             )
             {
                 WndBaseHolder* newWnd = new T();
@@ -64,7 +69,7 @@ namespace XD
                 newWnd->onInit();
                 newWnd->onShow(data);
                 if (data) for (auto& showCB : data->onShowCB) showCB(*newWnd, *data);
-                if (data) delete data;
+                delete data;
                 if (newWnd->_showingWndId == SIZE_MAX)
                 {
                     l.erase(itr);
@@ -78,13 +83,13 @@ namespace XD
             }
             else
             {
-                auto& l = _inst->hidenWndPool[classId];
+                auto& l = _inst->hiddenWndPool[classId];
                 auto itr = l.begin();
                 if (data) (*(itr->itr))->onHideCB = data->onHideCB;
 
                 (*(itr->itr))->onShow(data);
                 if (data) for (auto& showCB : data->onShowCB) showCB(*(*(itr->itr)), *data);
-                if (data) delete data;
+                delete data;
                 if ((*(itr->itr))->_showingWndId == SIZE_MAX)
                 {
                     (*(itr->itr))->_showingWndId = 0;
@@ -139,9 +144,11 @@ namespace XD
 
     private:
         static void init();
-        static void destory();
+        static void destroy();
         static void wndGC();
         static void update();
         static size_t newId();
     };
 }
+
+#pragma clang diagnostic pop

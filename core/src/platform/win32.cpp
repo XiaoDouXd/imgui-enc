@@ -5,13 +5,14 @@
 #include <Windows.h>
 #include <SDL_syswm.h>
 
-#include "_/__app_caller.hpp"
+#include "p_app.h"
+#include "app.h"
 
 namespace XD
 {
     #define SIZE_MOVE_TIMER_ID 1
     static bool sizeMoveTimerRunning = false;
-    static bool quit = false;
+    static auto quit = false;
 
     static int eventWatch(void*, SDL_Event* event) {
         if (event->type == SDL_SYSWMEVENT) {
@@ -21,7 +22,7 @@ namespace XD
             }
             else if (winMessage.msg == WM_TIMER) {
                 if (winMessage.wParam == SIZE_MOVE_TIMER_ID) {
-                    __app_caller::onUpdate(quit, false);
+                    App::onUpdate(quit, false);
                     if (quit) App::quit();
                 }
             }
@@ -34,7 +35,7 @@ namespace XD
         SDL_SetEventEnabled(SDL_SYSWMEVENT, SDL_TRUE);
     }
 
-    void platformSpecialEvent(bool& quit, const SDL_Event& event)
+    void platformSpecialEvent([[maybe_unused]] bool& unused, [[maybe_unused]] const SDL_Event& unused2)
     {
         if (sizeMoveTimerRunning) {
             KillTimer(GetActiveWindow(), SIZE_MOVE_TIMER_ID);

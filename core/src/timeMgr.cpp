@@ -1,31 +1,60 @@
-#include "timeMgr.h"
+#include <utility>
 
-namespace XD
+#include "p_timeMgr.h"
+
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+namespace XD::TimeMgr
 {
-    std::unique_ptr<TimeMgr::TimeMgrData> TimeMgr::_inst = nullptr;
+    class TimeCallback
+    {
+    public:
+        clock_t                 endTime;
+        std::function<void()>   cb;
+        TimeCallback(std::function<void()> cb, double endTime) :
+                endTime((clock_t)endTime), cb(std::move(cb)) {}
+    };
 
-    void TimeMgr::init()
+    class TimeCallbackCompare
+    {
+    public:
+        bool operator()(const TimeCallback& a, const TimeCallback& b)
+        { return a.endTime > b.endTime; }
+    };
+
+    class TimeMgrData
+    {
+    public:
+        std::chrono::high_resolution_clock::time_point startPoint;
+        std::priority_queue<
+                TimeCallback,
+                std::vector<TimeCallback>,
+                TimeCallbackCompare> callbacks;
+    };
+    std::unique_ptr<TimeMgrData> _inst = nullptr;
+
+    void init()
     {
         if (_inst) return;
         _inst = std::make_unique<TimeMgrData>();
     }
 
-    void TimeMgr::destory()
+    void destory()
     {
         if (_inst) _inst.reset();
     }
 
-    clock_t TimeMgr::now()
+    clock_t now()
     {
         return clock();
     }
 
-    std::chrono::high_resolution_clock::time_point TimeMgr::nowTimePoint()
+    std::chrono::high_resolution_clock::time_point nowTimePoint()
     {
         return std::chrono::high_resolution_clock::now();
     }
 
-    void TimeMgr::refresh()
+    void refresh()
     {
         if (_inst->callbacks.empty()) return;
         static bool run;
@@ -40,9 +69,10 @@ namespace XD
         } while (run);
     }
 
-    void TimeMgr::delay(std::function<void()> cb, clock_t delay)
+    void delay(const std::function<void()>& cb, clock_t delay)
     {
         if (_inst->callbacks.empty()) return;
-        _inst->callbacks.push(TimeCallback(cb, delay + now()));
+        _inst->callbacks.emplace(cb, delay + now());
     }
 }
+#pragma clang diagnostic pop

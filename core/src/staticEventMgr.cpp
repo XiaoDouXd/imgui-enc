@@ -23,7 +23,7 @@ namespace XD
         }
     }
 
-    void StaticEventMgr::unregisterEvent(const std::size_t& hashCode, std::ptrdiff_t obj)
+    void StaticEventMgr::unregisterEvent(const std::size_t& hashCode, uuids::uuid obj)
     {
         auto& eDic = _inst->staticEvents;
         if (eDic.find(hashCode) == eDic.end()) return;
@@ -40,7 +40,7 @@ namespace XD
         lDic.erase(eH);
     }
 
-    void StaticEventMgr::unregisterEvent(const std::optional<std::size_t>& hashCodeOpt, std::ptrdiff_t obj)
+    void StaticEventMgr::unregisterEvent(const std::optional<std::size_t>& hashCodeOpt, uuids::uuid obj)
     {
         if (!hashCodeOpt) return;
         const auto& hashCode = hashCodeOpt.value();
@@ -57,5 +57,10 @@ namespace XD
         }
 
         lDic.erase(eH);
+    }
+
+    void StaticEventMgr::destroy()
+    {
+        _inst.reset();
     }
 }

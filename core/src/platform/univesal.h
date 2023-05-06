@@ -18,5 +18,5 @@ namespace XD
     ///         具体运行与否受到 App::onUpdate() 的 checkPlatformSpecialEvent 参数控制
     /// @param quit 是否关闭窗口
     /// @param event 传入的 SDL 事件
-    void platformSpecialEvent(bool& quit, const SDL_Event& event);
+    void platformSpecialEvent(bool& quit, [[maybe_unused]] const SDL_Event& event);
 }
