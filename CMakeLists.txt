@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.24)
 get_filename_component(XD_PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 string(REPLACE " " "_" XD_PROJECT_NAME ${XD_PROJECT_NAME})
 project(${XD_PROJECT_NAME})
