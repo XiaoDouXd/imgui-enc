@@ -4,11 +4,9 @@
 #include <exception>
 #include <string>
 
-namespace XD
-{
+namespace XD {
     /// @brief 统一的异常处理类
-    class Exce : public std::exception
-    {
+    class Exce : public std::exception {
     public:
         /// @brief 统一的异常处理类
         /// @param line 异常触发的行号

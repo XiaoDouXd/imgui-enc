@@ -12,8 +12,7 @@
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 namespace XD::ImguiMgr
 {
-    class ImguiMgrData
-    {
+    class ImguiMgrData {
     public:
         ImGui_ImplVulkanH_Window    wHandle;
         ImGuiIO*                    io                  = nullptr;
@@ -29,8 +28,7 @@ namespace XD::ImguiMgr
 
     bool notLoadingFinished() { return _inst->notLoadingRendered; }
 
-    void init(SDL_Window* wSdl, VkSurfaceKHR& surf, int w, int h)
-    {
+    void init(SDL_Window* wSdl, VkSurfaceKHR& surf, int w, int h) {
         if (_inst) return;
         if (!VulkanMgr::inited()) throw Exce(__LINE__, __FILE__, "XD::ImguiMgr: 未初始化 vulkan");
         _inst = std::make_unique<ImguiMgrData>();
@@ -89,8 +87,7 @@ namespace XD::ImguiMgr
         prePresentFont();
     }
 
-    void render(const ImVec4& clearColor)
-    {
+    void render(const ImVec4& clearColor) {
         ImGui::Render();
         ImDrawData* drawData = ImGui::GetDrawData();
         const bool isMinimized = (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f);
@@ -105,14 +102,14 @@ namespace XD::ImguiMgr
         VkSemaphore image_acquired_semaphore  = _inst->wHandle.FrameSemaphores[_inst->wHandle.SemaphoreIndex].ImageAcquiredSemaphore;
         VkSemaphore render_complete_semaphore = _inst->wHandle.FrameSemaphores[_inst->wHandle.SemaphoreIndex].RenderCompleteSemaphore;
         err = vkAcquireNextImageKHR(VulkanMgr::getDev(), _inst->wHandle.Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &(_inst->wHandle.FrameIndex));
-        if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
-        {
+        if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) {
             _inst->swapChainRebuild = true;
             return;
         }
         VulkanMgr::checkVkResultCType(err);
 
         ImGui_ImplVulkanH_Frame* fd = &_inst->wHandle.Frames[_inst->wHandle.FrameIndex];
+
         {
             err = vkWaitForFences(VulkanMgr::getDev(), 1, &fd->Fence, VK_TRUE, UINT64_MAX);
             VulkanMgr::checkVkResultCType(err);
@@ -168,8 +165,7 @@ namespace XD::ImguiMgr
         present();
     }
 
-    void present()
-    {
+    void present() {
         if (_inst->swapChainRebuild) return;
         VkSemaphore render_complete_semaphore = _inst->wHandle.FrameSemaphores[_inst->wHandle.SemaphoreIndex].RenderCompleteSemaphore;
         VkPresentInfoKHR info = {};
@@ -185,8 +181,7 @@ namespace XD::ImguiMgr
         _inst->wHandle.SemaphoreIndex = (_inst->wHandle.SemaphoreIndex + 1) % _inst->wHandle.ImageCount;
     }
 
-    void prePresentFont()
-    {
+    void prePresentFont() {
         static const int nameMaxSize = 25;
         static const char* name = "source han san scn normal";
         auto io = XD::ImguiMgr::getIO();
@@ -237,8 +232,7 @@ namespace XD::ImguiMgr
         ImGui_ImplVulkan_DestroyFontUploadObjects();
     }
 
-    void presentFont()
-    {
+    void presentFont() {
         // 还没有顺利找到 imgui 的动态字体解决方案, 先推进别的
 
         // static const int nameMaxSize = 25;
@@ -284,8 +278,7 @@ namespace XD::ImguiMgr
         // ImGui_ImplVulkan_DestroyFontUploadObjects();
     }
 
-    void initDefaultStyle()
-    {
+    void initDefaultStyle() {
         // --------------------------------------------------- 设置样式
         ImGui::StyleColorsLight();
         auto& styleContext = ImGui::GetStyle();
@@ -355,31 +348,25 @@ namespace XD::ImguiMgr
         getIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     }
 
-    void disableLoading()
-    {
+    void disableLoading() {
         _inst->notLoadingRendered = false;
         _inst->notLoaded = false;
     }
 
-    void finishLoading()
-    {
+    void finishLoading() {
         _inst->notLoadingRendered = false;
     }
 
-    void preRender(SDL_Window* window, [[maybe_unused]] int& w, [[maybe_unused]] int& h)
-    {
-        if (_inst->notLoaded && !_inst->notLoadingRendered)
-        {
+    void preRender(SDL_Window* window, [[maybe_unused]] int& w, [[maybe_unused]] int& h) {
+        if (_inst->notLoaded && !_inst->notLoadingRendered) {
             presentFont();
             _inst->notLoaded = false;
         }
 
-        if (_inst->swapChainRebuild)
-        {
+        if (_inst->swapChainRebuild) {
             int width, height;
             SDL_GetWindowSize(window, &width, &height);
-            if (width > 0 && height > 0)
-            {
+            if (width > 0 && height > 0) {
                 ImGui_ImplVulkan_SetMinImageCount(VulkanMgr::getMinImageCount());
                 ImGui_ImplVulkanH_CreateOrResizeWindow(
                     VulkanMgr::getInst(),
@@ -402,8 +389,7 @@ namespace XD::ImguiMgr
         ImGui::NewFrame();
     }
 
-    void destroy()
-    {
+    void destroy() {
         ImGui_ImplVulkanH_DestroyWindow(VulkanMgr::getInst(), VulkanMgr::getDev(), &(_inst->wHandle), nullptr);
         _inst.reset();
     }

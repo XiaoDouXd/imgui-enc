@@ -8,6 +8,9 @@
 #include <queue>
 #include <thread>
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+
 namespace XD::TimeMgr
 {
         clock_t now();
@@ -19,3 +22,4 @@ namespace XD::TimeMgr
         /// @param delay 延迟(ms)
         void delay(const std::function<void()>& cb, clock_t delay);
 }
+#pragma clang diagnostic pop

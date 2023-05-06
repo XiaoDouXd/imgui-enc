@@ -5,6 +5,9 @@
 #include "shortcut.h"
 #include "staticEventMgr.h"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedStructInspection"
+
 namespace XD::StaticEvent {
     // ======================================= 窗口事件
     /// @brief 开始调整窗口大小
@@ -38,3 +41,4 @@ namespace XD::StaticEvent {
     /// @brief 新文件出队
     class OnFilePop : public EventTypeBase<OnFilePop> {};
 }
+#pragma clang diagnostic pop

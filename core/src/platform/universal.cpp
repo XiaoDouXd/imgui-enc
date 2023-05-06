@@ -1,7 +1,6 @@
 #include "univesal.h"
 
-namespace XD
-{
+namespace XD {
 #ifdef CC_NO_PLATFORM_SPECIAL_INIT
     void platformSpecialInit() {}
 #endif

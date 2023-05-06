@@ -257,7 +257,7 @@ namespace XD::App
 
         ImguiMgr::destroy();
         VulkanMgr::destroy();
-        TimeMgr::destory();
+        TimeMgr::destroy();
 
         SDL_DestroyWindow(_inst->window);
         SDL_Quit();

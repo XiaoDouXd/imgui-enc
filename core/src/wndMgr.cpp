@@ -1,11 +1,9 @@
 #include "wndMgr.h"
 
-namespace XD::App
-{
+namespace XD::App {
     std::unique_ptr<WndMgr::WndMgrData> WndMgr::_inst = nullptr;
 
-    size_t WndMgr::newId()
-    {
+    size_t WndMgr::newId() {
         if (_inst->curId == 0 || _inst->curId == SIZE_MAX)
             _inst->curId = 1;
         while (_inst->allWndPool.find(_inst->curId) != _inst->allWndPool.end())
@@ -13,8 +11,7 @@ namespace XD::App
         return _inst->curId;
     }
 
-    void WndMgr::close(size_t wndId)
-    {
+    void WndMgr::close(size_t wndId) {
         if (_inst->shownWndPool.find(wndId) == _inst->shownWndPool.end())
             return;
 
@@ -27,15 +24,12 @@ namespace XD::App
         _inst->shownWndPool.erase(wndId);
     }
 
-    void WndMgr::wndGC()
-    {
+    void WndMgr::wndGC() {
         static std::stack<size_t> delCache = std::stack<size_t>();
         if (_inst->hiddenWndPool.empty()) return;
-        for (auto& wndList : _inst->hiddenWndPool)
-        {
+        for (auto& wndList : _inst->hiddenWndPool) {
             while (!wndList.second.empty() &&
-                (TimeMgr::now() - wndList.second.back().hideTime) > intervalGCTime)
-            {
+                (TimeMgr::now() - wndList.second.back().hideTime) > intervalGCTime) {
                 auto& i = wndList.second.back();
                 auto& l =_inst->wndClassPool[wndList.first];
                 delete (*(i.itr));
@@ -43,31 +37,26 @@ namespace XD::App
                 _inst->allWndPool.erase(i.wndId);
                 wndList.second.pop_back();
 
-                if (l.empty())
-                {
+                if (l.empty()) {
                     _inst->wndClassPool.erase(wndList.first);
                     delCache.push(wndList.first);
                 }
             }
         }
-        while (!delCache.empty())
-        {
+        while (!delCache.empty()) {
             _inst->hiddenWndPool.erase(delCache.top());
             delCache.pop();
         }
     }
 
-    void WndMgr::update()
-    {
-        if (TimeMgr::now() - _inst->lastGCtime > intervalGCTime)
-        {
+    void WndMgr::update() {
+        if (TimeMgr::now() - _inst->lastGCtime > intervalGCTime) {
             wndGC();
             _inst->lastGCtime = TimeMgr::now();
         }
     }
 
-    void WndMgr::init()
-    {
+    void WndMgr::init() {
         _inst = std::make_unique<WndMgrData>();
     }
 

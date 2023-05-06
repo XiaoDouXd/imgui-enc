@@ -13,6 +13,9 @@
 
 #include "uuidGen.h"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+
 namespace XD
 {
     /// @brief 事件类型基类
@@ -21,9 +24,9 @@ namespace XD
     {
         friend class StaticEventMgr;
     public:
-        using _cc_eType = EType;
-        using _cc_fType = std::function<void(ArgTypes...)>;
-        using _cc_isEventType = std::true_type;
+        using _cc_eType [[maybe_unused]] = EType;
+        using _cc_fType [[maybe_unused]] = std::function<void(ArgTypes...)>;
+        using _cc_isEventType [[maybe_unused]] = std::true_type;
     };
 
 
@@ -194,3 +197,4 @@ namespace XD
         static void destroy();
     };
 }
+#pragma clang diagnostic pop

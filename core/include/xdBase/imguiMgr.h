@@ -7,6 +7,9 @@
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+
 namespace XD::ImguiMgr {
     bool inited();
     void finishLoading();
@@ -19,3 +22,4 @@ namespace XD::ImguiMgr {
     ImGuiIO& getIO();
     ImGuiContext& getContext();
 }
+#pragma clang diagnostic pop

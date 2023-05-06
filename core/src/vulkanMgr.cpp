@@ -9,13 +9,10 @@
 #include "ccexce.h"
 #include "p_vulkanMgr.h"
 
-namespace XD::VulkanMgr
-{
-    class Data
-    {
+namespace XD::VulkanMgr {
+    class Data {
     public:
-        struct InitRec
-        {
+        struct InitRec {
         public:
             bool dev;
             bool phyDev;
@@ -48,8 +45,7 @@ namespace XD::VulkanMgr
         int32_t messageCode,
         const char* pLayerPrefix,
         const char* pMessage,
-        void* pUserData)
-    {
+        void* pUserData) {
         (void)flags; (void)object; (void)location; (void)messageCode; (void)pUserData; (void)pLayerPrefix; // Unused arguments
         fprintf(stderr, "XD::Vulkan 来自对象类型为 %i 的 Debug 报告: \n\nMessage: %s\n\n", objectType, pMessage);
         return VK_FALSE;
@@ -60,20 +56,17 @@ namespace XD::VulkanMgr
 
     bool inited() { return (bool)_inst; }
 
-    void checkVkResultCType(VkResult err)
-    {
+    void checkVkResultCType(VkResult err) {
         if (err == 0) return;
         throw Exce(__LINE__, __FILE__, &"XD::VulkanMgr Exce: Result = " [ (int)err]);
     }
 
-    void checkVkResult(vk::Result err)
-    {
+    void checkVkResult(vk::Result err) {
         if (err == vk::Result::eSuccess) return;
         throw Exce(__LINE__, __FILE__, &"XD::VulkanMgr Exce: Result = " [ (int)err]);
     }
 
-    void createInst(const char** extensions, uint32_t extensionsCount)
-    {
+    void createInst(const char** extensions, uint32_t extensionsCount) {
         if (_inst) return;
         _inst = std::make_unique<Data>();
 
@@ -118,19 +111,16 @@ namespace XD::VulkanMgr
 #endif
     }
 
-    void selectGPU()
-    {
+    void selectGPU() {
         if (!_inst) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: Instance Empty");
         if (_inst->initState.phyDev) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 重复选择 GPU");
         auto allGPU = _inst->instance.enumeratePhysicalDevices();
         if (allGPU.empty()) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 找不到可用 GPU");
 
         uint32_t selectedGpu = 0;
-        for (auto i = std::size_t(0); i < allGPU.size(); i++)
-        {
+        for (auto i = std::size_t(0); i < allGPU.size(); i++) {
             if (allGPU[i].getProperties().deviceType ==
-                vk::PhysicalDeviceType::eDiscreteGpu)
-            {
+                vk::PhysicalDeviceType::eDiscreteGpu) {
                 selectedGpu = i;
                 break;
             }
@@ -139,8 +129,7 @@ namespace XD::VulkanMgr
         _inst->initState.phyDev = true;
     }
 
-    void createDevice()
-    {
+    void createDevice() {
         if (!_inst) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: Instance Empty");
         if (!(_inst->initState.queueFamily)) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 没有初始化队列簇");
 
@@ -161,15 +150,12 @@ namespace XD::VulkanMgr
         _inst->initState.dev = true;
     }
 
-    void selectQueueFamily()
-    {
+    void selectQueueFamily() {
         if (!_inst) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: Instance Empty");
         if (!(_inst->initState.phyDev)) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 没有初始化 GPU");
         auto _queueProp = _inst->physicalDevice.getQueueFamilyProperties();
-        for(auto i = 0; i < _queueProp.size(); i++)
-        {
-            if (_queueProp[i].queueFlags & vk::QueueFlagBits::eGraphics)
-            {
+        for(auto i = 0; i < _queueProp.size(); i++) {
+            if (_queueProp[i].queueFlags & vk::QueueFlagBits::eGraphics) {
                 _inst->queueFamily = i;
                 _inst->initState.queueFamily = true;
                 return;
@@ -177,14 +163,12 @@ namespace XD::VulkanMgr
         }
     }
 
-    void createDescPool()
-    {
+    void createDescPool() {
         if (!_inst) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: Instance Empty");
         if (!(_inst->initState.dev)) throw Exce(__LINE__, __FILE__, "XD::VulkanMgr Exce: 没有初始化 Dev");
 
 #define ARRAYSIZE(_ARR)          ((int)(sizeof(_ARR) / sizeof(*(_ARR))))
-        vk::DescriptorPoolSize poolSizes[] =
-        {
+        vk::DescriptorPoolSize poolSizes[] = {
             {vk::DescriptorType::eSampler, 1000},
             {vk::DescriptorType::eCombinedImageSampler, 1000},
             {vk::DescriptorType::eSampledImage, 1000},
@@ -208,8 +192,7 @@ namespace XD::VulkanMgr
 #undef ARRAYSIZE
     }
 
-    void init(const char** extensions, uint32_t extensionsCount)
-    {
+    void init(const char** extensions, uint32_t extensionsCount) {
         if (_inst) return;
 
         createInst(extensions, extensionsCount);
@@ -219,8 +202,7 @@ namespace XD::VulkanMgr
         createDescPool();
     }
 
-    void destroy()
-    {
+    void destroy() {
         vkDestroyDescriptorPool(_inst->device, _inst->descriptorPool, nullptr);
 #ifdef CC_VK_DEBUG_REPORT
         auto destroyFunc = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr((_inst->instance), "vkDestroyDebugReportCallbackEXT");

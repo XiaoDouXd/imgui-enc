@@ -1,4 +1,5 @@
 #pragma once
+
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
@@ -6,8 +7,7 @@
 #define CC_VK_DEBUG_REPORT
 #endif
 
-namespace XD::VulkanMgr
-{
+namespace XD::VulkanMgr {
         bool inited();
         void checkVkResultCType(VkResult err);
         void checkVkResult(vk::Result err);

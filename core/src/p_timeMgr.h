@@ -4,5 +4,5 @@
 
 namespace XD::TimeMgr {
     void init();
-    void destory();
+    void destroy();
 }

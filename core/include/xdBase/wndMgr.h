@@ -12,22 +12,18 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 
-namespace XD::App
-{
-    class WndMgr
-    {
+namespace XD::App {
+    class WndMgr {
         friend void init(const char* wndName);
         friend void updateTail();
         friend void onDestroy();
     private:
-        struct WndHolderItr
-        {
+        struct WndHolderItr {
             std::list<WndBaseHolder*>::iterator itr;
             size_t      wndId = 0;
             clock_t     hideTime = 0;
         };
-        class WndMgrData
-        {
+        class WndMgrData {
         public:
             std::unordered_map<size_t, std::list<WndBaseHolder*>> wndClassPool;
             std::unordered_map<size_t, std::list<WndHolderItr>> hiddenWndPool;
@@ -42,14 +38,12 @@ namespace XD::App
     public:
         template<class T>
         requires std::is_base_of<WndBase<T>, T>::value
-        static size_t open(WndDataBaseHolder* data = nullptr, std::string windowName = "")
-        {
+        static size_t open(WndDataBaseHolder* data = nullptr, std::string windowName = "") {
             auto classId = typeid(T).hash_code();
             windowName = windowName.empty() ? typeid(T).name() : windowName;
             if (_inst->hiddenWndPool.find(classId) == _inst->hiddenWndPool.end() ||
                 _inst->hiddenWndPool[classId].empty()
-            )
-            {
+            ) {
                 WndBaseHolder* newWnd = new T();
                 newWnd->_showingWndId = SIZE_MAX;
 
@@ -81,8 +75,7 @@ namespace XD::App
 
                 return wndId;
             }
-            else
-            {
+            else {
                 auto& l = _inst->hiddenWndPool[classId];
                 auto itr = l.begin();
                 if (data) (*(itr->itr))->onHideCB = data->onHideCB;
@@ -110,8 +103,7 @@ namespace XD::App
 
         template<class T>
         requires std::is_base_of<WndBase<T>, T>::value
-        static T* getWnd(size_t wndId)
-        {
+        static T* getWnd(size_t wndId) {
             auto classId = typeid(T).hash_code();
             if (_inst->wndClassPool.find(classId) == _inst->wndClassPool.end())
                 return nullptr;
@@ -123,8 +115,7 @@ namespace XD::App
 
         template<class T>
         requires std::is_base_of<WndBase<T>, T>::value
-        static std::list<T*> getWnds()
-        {
+        static std::list<T*> getWnds() {
             auto classId = typeid(T).hash_code();
             if (_inst->wndClassPool.find(classId) == _inst->wndClassPool.end())
                 return std::list<T*>();

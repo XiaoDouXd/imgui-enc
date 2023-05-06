@@ -3,8 +3,7 @@
 #include <cstdint>
 
 // ================================================== 程序参数预定义
-namespace XD
-{
+namespace XD {
     extern const uint8_t* xdWndInitConf_iconPngData;
     extern size_t xdWndInitConf_iconPngSize;
     extern const char* xdWndInitConf_wndName;

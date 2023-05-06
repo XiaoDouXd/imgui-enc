@@ -11,8 +11,7 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 
-namespace XD::App
-{
+namespace XD::App {
     /// @brief class T must be final class,
     /// or you can ensure that T wouldn't be inherited!
     template<class T> class WndBase;
@@ -24,15 +23,13 @@ namespace XD::App
     class WndBaseHolder;
     class WndDataBaseHolder;
 
-    class WndDataBaseHolder
-    {
+    class WndDataBaseHolder {
         friend class WndMgr;
         template<class T> friend class WndDataBase;
     public:
         template<class T>
         requires std::is_base_of<WndDataBase<T>, T>::value
-        T* tryGetWndData()
-        {
+        T* tryGetWndData() {
             if (!this || typeid(T).hash_code() != this->classId) return nullptr;
             return static_cast<T*>(this);
         }
@@ -47,15 +44,13 @@ namespace XD::App
         const size_t classId; // 窗口数据类型 id
     };
 
-    class WndBaseHolder : LoopUnit
-    {
+    class WndBaseHolder : LoopUnit {
         friend class WndMgr;
         template<class T> friend class WndBase;
     public:
         template<class T>
         requires std::is_base_of<WndBase<T>, T>::value
-        T* tryGetWnd()
-        {
+        T* tryGetWnd() {
             if (typeid(T).hash_code() != this->classId) return nullptr;
             return static_cast<T*>(this);
         }
@@ -76,10 +71,8 @@ namespace XD::App
         virtual void onHide() {}
 
         void start() final {}
-        void update() final
-        {
-            if (_showingWndId)
-            {
+        void update() final {
+            if (_showingWndId) {
                 if (onWndBegin()) onRefresh();
                 onWndEnd();
             }
@@ -89,16 +82,14 @@ namespace XD::App
 
         template<typename EType>
         requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
-        void registerEvent(EType::_cc_fType cb)
-        {
+        void registerEvent(EType::_cc_fType cb) {
             auto hashcode = StaticEventMgr::registerEvent<EType>(_uuid, cb);
             if (hashcode) _events.insert(hashcode.value());
         }
 
         template<typename EType>
         requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
-        void unregisterEvent()
-        {
+        void unregisterEvent() {
             auto hashcode = StaticEventMgr::unregisterEvent<EType>(_uuid);
             if (hashcode) _events.erase(hashcode.value());
         }
@@ -118,23 +109,20 @@ namespace XD::App
     };
 
     template<class T>
-    class WndDataBase : public WndDataBaseHolder
-    {
+    class WndDataBase : public WndDataBaseHolder {
     protected:
         WndDataBase() : WndDataBaseHolder(typeid(T).hash_code()) {};
         ~WndDataBase() override = default;
     };
 
     /// @brief 默认 data
-    class WndDataDefault : public WndDataBase<WndDataDefault>
-    {
+    class WndDataDefault : public WndDataBase<WndDataDefault> {
     public:
         WndDataDefault() = default;
     };
 
     template<class T>
-    class WndBase : public WndBaseHolder
-    {
+    class WndBase : public WndBaseHolder {
     protected:
         explicit WndBase(LoopLayer loopLayer = LoopLayer::WndNormal) :
             WndBaseHolder(typeid(T).hash_code(), loopLayer) {}
