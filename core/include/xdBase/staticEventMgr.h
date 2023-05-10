@@ -26,7 +26,7 @@ namespace XD
     {
         friend class StaticEventMgr;
     public:
-        using _cc_eType [[maybe_unused]] = EType;
+        using _cc_eType [[maybe_unused]] = EventTypeBase<EType, ArgTypes...>;
         using _cc_fType [[maybe_unused]] = std::function<void(ArgTypes...)>;
         using _cc_isEventType [[maybe_unused]] = std::true_type;
     };
@@ -81,7 +81,7 @@ namespace XD
         /// @param cb callback of event
         /// @return the event inst of register action (you can unregister specific event using this)
         template<class EType>
-        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        requires EType::_cc_isEventType::value && std::is_base_of<typename EType::_cc_eType, EType>::value
         static std::optional<std::size_t> registerEvent(uuids::uuid obj, typename EType::_cc_fType cb) {
             std::size_t hashCode = typeid(EType).hash_code();
             auto& eDic = _inst->staticEvents;
@@ -102,7 +102,7 @@ namespace XD
         /// @tparam EType event type
         /// @param obj obj uuid
         template<class EType>
-        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        requires EType::_cc_isEventType::value && std::is_base_of<typename EType::_cc_eType, EType>::value
         static std::optional<std::size_t> unregisterEvent(const uuids::uuid& obj) {
             std::size_t hashCode = typeid(EType).hash_code();
             auto& eDic = _inst->staticEvents;
@@ -134,7 +134,7 @@ namespace XD
         /// @brief clear all listener of this event
         /// @tparam EType event type
         template<class EType>
-        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        requires EType::_cc_isEventType::value && std::is_base_of<typename EType::_cc_eType, EType>::value
         static void clearEvent() {
             std::size_t hashCode = typeid(EType).hash_code();
             auto& eDic = _inst->staticEvents;
@@ -153,7 +153,7 @@ namespace XD
         /// @tparam ...ArgTypes param package
         /// @param ...args callback params
         template<class EType, typename... ArgTypes>
-        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        requires EType::_cc_isEventType::value && std::is_base_of<typename EType::_cc_eType, EType>::value
         && std::is_same<typename EType::_cc_fType, std::function<void(ArgTypes...)>>::value
         static void broadcast(ArgTypes... args) {
             std::size_t hashCode = typeid(EType).hash_code();
@@ -171,7 +171,7 @@ namespace XD
         /// @tparam ...ArgTypes param package
         /// @param ...args callback params
         template<class EType, typename... ArgTypes>
-        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        requires EType::_cc_isEventType::value && std::is_base_of<typename EType::_cc_eType, EType>::value
         && std::is_same<typename EType::_cc_fType, std::function<void(ArgTypes...)>>::value
         static void broadcastAsync(ArgTypes... args) {
             std::size_t hashCode = typeid(EType).hash_code();

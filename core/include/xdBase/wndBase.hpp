@@ -105,7 +105,7 @@ namespace XD::App {
         /// @param cb event callback
         /// @tparam EType event type
         template<typename EType>
-        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        requires EType::_cc_isEventType::value && std::is_base_of<typename EType::_cc_eType, EType>::value
         void registerEvent(EType::_cc_fType cb) {
             auto hashcode = StaticEventMgr::registerEvent<EType>(_uuid, cb);
             if (hashcode) _events.insert(hashcode.value());
@@ -114,7 +114,7 @@ namespace XD::App {
         /// @brief unregister window event
         /// @tparam EType event type
         template<typename EType>
-        requires EType::_cc_isEventType::value && std::is_same<typename EType::_cc_eType, EType>::value
+        requires EType::_cc_isEventType::value && std::is_base_of<typename EType::_cc_eType, EType>::value
         void unregisterEvent() {
             auto hashcode = StaticEventMgr::unregisterEvent<EType>(_uuid);
             if (hashcode) _events.erase(hashcode.value());
